@@ -1,0 +1,74 @@
+\documentclass[border=1mm, preview]{standalone}
+\usepackage[active,tightpage]{preview}
+\usepackage{varwidth}
+\usepackage{amssymb, amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e}
+\usepackage{polyglossia}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage[utf8]{inputenc}
+\usepackage{makecell}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{xltxtra,xunicode}
+\usepackage{xcolor}
+\begin{document}
+\begin{table}[H]
+\centering
+\resizebox{\linewidth}{!}{
+\begin{tabular}{llr}
+\toprule
+\multicolumn{2}{c}{Personal effects of nutrients} & \multicolumn{1}{c}{ } \\
+\cmidrule(l{3pt}r{3pt}){1-2}
+\textbf{Effect 1} & \textbf{Effect 2} & \textbf{Correlation}\\
+\midrule
+Diabetes medication -> P-K & Carbonhydrates, E\% -> fP-Pi & 0.136\\
+Fiber -> P-K & Hydroxycholecalciferol -> fP-Pi & 0.116\\
+Fat E\% -> P-K & Natrium -> P-K & 0.105\\
+Fat E\% -> P-K & Calsium -> fP-Pi & 0.102\\
+Diabetes medication -> P-K & fP-Pi level & 0.100\\
+\addlinespace
+Fiber -> fP-Pi & Natrium -> fP-Pi & 0.097\\
+Natrium -> fP-Pi & Fiber -> fP-Pi & 0.097\\
+Blood fat medication -> P-Alb & Hydroxycholecalciferol-> P-Alb & 0.096\\
+Protein, g/kg -> fP-Pi & Blood fat medication-> P-Alb & 0.095\\
+Phosphate binder med. -> P-K & Potassium -> fP-Pi & 0.094\\
+\addlinespace
+Carbonhydrates, E\% -> P-K & Phosphate binder med. -> fP-Pi & 0.093\\
+Phosphate binder med. -> fP-Pi & Carbonhydrates, E\% -> P-K & 0.093\\
+Blood fat medication -> P-K & Protein, g/kg -> fP-Pi & 0.092\\
+Energy, kcal/kg -> P-K & Calsium-> P-Alb & 0.092\\
+Gender -> P-Alb & Protein, E\% -> P-K & 0.092\\
+\addlinespace
+Energy, kcal/kg -> P-K & Gender -> fP-Pi & -0.092\\
+Gender -> fP-Pi & Energy, kcal/kg -> P-K & -0.092\\
+Blood fat medication -> P-K & Salt -> fP-Pi & -0.094\\
+Natrium -> P-K & Polyunsaturated Fatty Acids, E\% -> P-K & -0.094\\
+Phosphate binder med. -> P-K & Phosphate binder med. -> fP-Pi & -0.095\\
+\addlinespace
+Carbonhydrates, E\% -> fP-Pi & Fiber-> P-Alb & -0.100\\
+Saturated Fatty Acids, E\% -> P-Alb & Hydroxycholecalciferol-> P-Alb & -0.100\\
+Monounsaturated Fatty Acids, E\% -> P-K & Calsium -> fP-Pi & -0.102\\
+Renavit -> fP-Pi & Saturated Fatty Acids, E\% -> fP-Pi & -0.103\\
+Potassium -> fP-Pi & Vitamin D -> fP-Pi & -0.104\\
+\addlinespace
+Diabetes medication -> fP-Pi & Renavit -> fP-Pi & -0.105\\
+Renavit -> P-K & Potassium -> fP-Pi & -0.108\\
+Carbonhydrates, E\% -> fP-Pi & Protein, E\% -> P-K & -0.108\\
+Protein, g/kg -> P-K & Vitamin D -> fP-Pi & -0.120\\
+Natrium -> P-K & fP-Pi level & -0.133\\
+\bottomrule
+\end{tabular}}
+\end{table}
+\end{document}

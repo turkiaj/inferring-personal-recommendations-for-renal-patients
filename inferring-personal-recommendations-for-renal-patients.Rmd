@@ -1,0 +1,2405 @@
+---
+title: "Inferring personal intake recommendations of phosphorous and potassium for end-stage renal failure patients by simulating with hierarchical Bayesian multivariate model"
+subtitle: "Supplementary Materials"
+author:
+- JARI TURKIA \textsuperscript{1,2}
+- URSULA SCHWAB \textsuperscript{3,4}
+- VILLE HAUTAMÄKI \textsuperscript{1,5}
+- \textsuperscript{1} School of Computing, University of Eastern Finland, 80101 Joensuu, Finland
+- \textsuperscript{2} CGI Suomi, Joensuu, Finland
+- \textsuperscript{3} School of Medicine, Institute of Public Health and Clinical Nutrition,
+- University of Eastern Finland, Kuopio, Finland
+- \textsuperscript{4} Department of Medicine, Endocrinology and Clinical Nutrition,
+- Kuopio University Hospital, Kuopio, Finland
+- \textsuperscript{5} Department of Electrical and Computer Engineering, 
+- National University of Singapore, Singapore
+
+output:
+  pdf_document:
+    latex_engine: xelatex
+    fig_caption: yes
+    includes:
+      in_header: custom_figure_captions.tex
+  html_document: default
+header-includes: \usepackage{float}  
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(kableExtra) # for HTML and Latex tables
+
+knitr::opts_chunk$set(echo = TRUE, fig.align="center", fig.pos = 'H')
+
+# this allows using tikz rendering for plots with "dev=tikz"
+knit_hooks$set(plot = function(x, options) {
+  if ('tikz' %in% options$dev && !options$external) {
+    hook_plot_tex(x, options)
+  } else hook_plot_md(x, options)
+})
+
+# Fix seed for random number generator for getting consistent results in kmeans etc.
+fixed_seed <- 678
+
+# Load common MEBN package
+source("mebn/v2/MEBNv2.r")
+
+# Online version (TRUE) uses color images while (FALSE) renders exact figures for the article 
+RenderArticleFigures <- FALSE
+```
+
+This notebook reproduces in detail the analysis of personal diet recommendations described in the main
+article. The notebook starts visualizing the collected raw data, prepares it for analysis, and estimates personal reaction models with these data. The personal reaction models are combined with the estimation of the current personal diets for constructing personal graphical models. These personal models generate the levels of blood concentrations when a diet is given, they are used in simulating recommended personal diets for reaching predefined normal concentrations. Finally, these personal diet recommendations are compared for showing the divergence among the studied patients.
+
+The notebook execution generates all the figures and tables that are included in the article and produces also the referenced supplementary figures. The article is accompanied by a PDF rendition of the notebook that shows all the supplementary figures and important parts of the program code so that the analysis can be followed in detail. The executable RMarkdown notebook with data can be found in a public GitHub repository of the corresponding author.
+
+# Dialysis patient data
+
+```{r data_loading, echo=FALSE, message=FALSE, warning=FALSE}
+library(lubridate)
+library(dplyr)
+library(tidyr)
+
+# Read the data description
+datadesc_fat_epros <- read.csv(file="data/DIALYSIS_data_description_fat_epros.csv", header = TRUE, sep = ";")
+
+# Read the actual data matching the description
+dialysis <- read.csv(file="data/DIALYSIS.csv", sep=";", dec=",")
+
+# Define factors
+dialysis$potilas <- factor(dialysis$potilas)
+dialysis$nesterajoitus <- factor(dialysis$nesterajoitus)
+dialysis$verenpainelaakitys <- factor(dialysis$verenpainelaakitys)
+dialysis$verenrasvojen_laakitys <- factor(dialysis$verenrasvojenlaakitys)
+dialysis$mielialalaakitys <- factor(dialysis$mielialalaakitys)
+dialysis$fosforinsitoja <- factor(dialysis$fosforinsitoja)
+dialysis$kaliuminsitoja <- factor(dialysis$kaliuminsitoja)
+dialysis$anemian_hoito <- factor(dialysis$anemianhoito)
+dialysis$diabeteslaakitys <- factor(dialysis$diabeteslaakitys)
+dialysis$antibiootti <- factor(dialysis$antibiootti)
+dialysis$marevan <- factor(dialysis$marevan)
+dialysis$nesteenpoisto <- factor(dialysis$nesteenpoisto)
+dialysis$ummetuslaake <- factor(dialysis$ummetuslaake)
+dialysis$verenohennus <- factor(dialysis$verenohennus)
+dialysis$akt_dvit <- factor(dialysis$aktdvit)
+dialysis$renavit <- factor(dialysis$renavit)
+dialysis$cad <- factor(dialysis$cad)
+
+# Calculate missing E% for fats 
+# https://fineli.fi/fineli/fi/ravintotekijat/2331
+
+dialysis$mufaepros <- dialysis$mufa * 9 / dialysis$energiakcal * 100 # Rasvan energiakerroin on 37 kJ/g (9 kcal/g)
+dialysis$pufaepros <- dialysis$pufa * 9 / dialysis$energiakcal * 100 # Rasvan energiakerroin on 37 kJ/g (9 kcal/g)
+#dialysis$safaepros2 <- dialysis$safa * 9 / dialysis$energiakcal * 100 # Rasvan energiakerroin on 37 kJ/g (9 kcal/g)
+
+# Add these new E% features as predictors
+mufa_e <- datadesc_fat_epros[datadesc_fat_epros$Name=="mufa",]
+mufa_e$Name <- "mufaepros"
+mufa_e$Unit <- "E%"
+mufa_e$Description <- "Monounsaturated Fatty Acids, E%"
+mufa_e$Descriptionfin <- "Mufa E%"
+datadesc_fat_epros <- rbind(datadesc_fat_epros, mufa_e)
+
+pufa_e <- datadesc_fat_epros[datadesc_fat_epros$Name=="pufa",]
+pufa_e$Name <- "pufaepros"
+pufa_e$Unit <- "E%"
+pufa_e$Description <- "Polyunsaturated Fatty Acids, E%"
+pufa_e$Descriptionfin <- "Pufa E%"
+datadesc_fat_epros <- rbind(datadesc_fat_epros, pufa_e)
+
+# Remove g/d features from predictors
+datadesc_fat_epros[datadesc_fat_epros$Name=="mufa",]$Order <- 0
+datadesc_fat_epros[datadesc_fat_epros$Name=="pufa",]$Order <- 0
+
+# gender: female = 1, male = 0
+dialysis$sukupuoli <- factor(ifelse(dialysis$sukupuoli == "nainen", 1, 0))
+
+# Days between laboratory test and food record interview
+dialysis$responsedays <- difftime(as.Date(dialysis$labraaika, '%d.%m.%Y'), as.Date(dialysis$ravhaastaika, '%d.%m.%Y'), units = c("days"))
+
+responsedays_desc <- datadesc_fat_epros[datadesc_fat_epros$Name=="ika",]
+responsedays_desc$Order <- 0 # OMITTED !!
+responsedays_desc$Distribution <- "Integer"  # Filter this out from normalization etc.
+responsedays_desc$Name <- "responsedays"
+responsedays_desc$Unit <- "days"
+responsedays_desc$Description <- "responsetime"
+responsedays_desc$Descriptionfin <- "vasteaika"
+datadesc_fat_epros <- rbind(datadesc_fat_epros, responsedays_desc)
+
+# important: dataset is ordered by successive patients and observations so that estimation works correctly
+dialysis <- dialysis[order(dialysis$potilas, dialysis$havainto),]
+
+# remove patients with one observation only
+
+# dialysis
+patients_with_two_obs <- dialysis %>% 
+  group_by(potilas) %>% 
+  summarise(havainto_sum = sum(havainto)) %>%
+  filter(havainto_sum == 3) %>%
+  select(potilas) %>%
+  unlist() %>% as.vector()
+
+dialysis <- dialysis[dialysis$potilas %in% patients_with_two_obs,]
+
+# - reset patient levels
+dialysis$potilas <- factor(dialysis$potilas)
+
+# Define how to iterate through the graph
+# - same targets
+assumedtargets <- datadesc_fat_epros[datadesc_fat_epros$Order==200,]
+```
+
+```{r two_sets_of_predictors, echo=FALSE, message=FALSE}
+# - different sets of predictors
+
+## FAT EPROS
+assumedpredictors_fat_epros <- datadesc_fat_epros[datadesc_fat_epros$Order==100,]
+
+# Ordering for table
+assumedpredictors_fat_epros <- assumedpredictors_fat_epros[order(assumedpredictors_fat_epros$Unit, assumedpredictors_fat_epros$Description),]
+
+gaussian_preds <- as.vector(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian" | assumedpredictors_fat_epros$Distribution == "LogNormal",]$Name)
+show_decimals <- as.vector(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian" | assumedpredictors_fat_epros$Distribution == "LogNormal",]$Decimals)
+
+pred_table <- as.data.frame(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian" | assumedpredictors_fat_epros$Distribution == "LogNormal",]$Description, row.names = NULL)
+
+range_mat <- paste0(round(apply(t(dialysis[gaussian_preds]), 1, function(x) mean(x)),show_decimals), " (",round(apply(t(dialysis[gaussian_preds]), 1, function(x) min(x)),show_decimals)," - ",round(apply(t(dialysis[gaussian_preds]), 1, function(x) max(x)),show_decimals),") ", as.vector(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian",]$Unit))
+
+prior_range <- paste0(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian",]$Lowerbound, " - ", assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian",]$Upperbound, " ", assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian",]$Unit)
+
+pred_table_fat_epros <- cbind(pred_table, range_mat)
+colnames(pred_table_fat_epros) <- c("Nutrient", "Sample avg. (min-max)")
+
+```
+
+```{r table1, echo=FALSE, message=FALSE, warning=FALSE}
+library(kableExtra)
+
+# The analyzed dataset consists of food records and laboratory measurements from end-stage renal patients in dialysis. The following nutrients are considered possible predictors of 
+# concentrations. Note that we use energy-% of fats and protein as a unit in our analysis. This is referred to as Table 1 in the main article.
+
+# Latex notation from tables/nutrient_table.tex is used in the article
+
+phos_id <- which(pred_table_fat_epros$Nutrient == "Phosphorous")
+pot_id <- which(pred_table_fat_epros$Nutrient == "Potassium")
+
+table1 <- kable(pred_table_fat_epros, booktabs = T, row.names = NA, format = "latex", caption = "Nutrient predictors of the model.") %>%
+  kable_styling(full_width = TRUE) %>%
+  kable_styling(latex_options = "HOLD_position") %>%
+  row_spec(0,bold=TRUE) %>% 
+  row_spec(phos_id,bold=TRUE) %>%
+  row_spec(pot_id,bold=TRUE)
+
+#table1
+
+table1 %>% save_kable(file = "tables/nutrient_table.pdf", keep_tex = TRUE)
+```
+```{r table2, echo=FALSE, message=FALSE}
+library(kableExtra)
+
+# The following personal details and medication are considered as predictors. This is referenced as Table 2 in the article.
+
+medication_preds <- as.vector(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Bernoulli",]$Name)
+medication_table <- as.data.frame(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Bernoulli",]$Description, row.names = NULL)
+
+# Add dialysis treatments to table 
+medication_preds <- c(medication_preds, "KHD", "OHD", "PD")
+medication_table <- rbind(medication_table, "Home hemodialysis", "Hospital hemodialysis", "Peritoneal dialysis")
+
+# Hot-encode the treatments in data (PD/KHD/OHD)
+dialysis$PD <- 0  
+dialysis$KHD <- 0  
+dialysis$OHD <- 0  
+dialysis[dialysis$hoitomuoto == "PD",]$PD <- 1
+dialysis[dialysis$hoitomuoto == "KHD",]$KHD <- 1
+dialysis[dialysis$hoitomuoto == "OHD",]$OHD <- 1
+
+medication_table <- cbind(medication_table, paste0(round(colSums(dialysis[medication_preds] == 1) / nrow(dialysis[medication_preds]) * 100, 0), "%"))
+colnames(medication_table) <- c("Personal detail", "Percentage of patients")
+
+# fix gender description in table
+gender_row <- medication_table[medication_table[1]=="Gender",]
+gender_row[2] <- paste0(gender_row[2], " female")
+
+medication_table[medication_table[1]=="Gender",] <- gender_row
+
+# Latex notation from tables/personinfo_table.tex is used in the article
+
+table2 <- kable(medication_table, booktabs = T, row.names = NA, format = "latex", caption = "Personal details that are used as predictors.") %>%
+  kable_styling(full_width = TRUE) %>%
+  kable_styling(latex_options = "HOLD_position") %>%
+  row_spec(0,bold=TRUE)
+
+#table2
+
+table2 %>% save_kable(file = "tables/personinfo_table.pdf", keep_tex = TRUE)
+```
+Let us explore then how the intake of dietary potassium and phosphorus correspond in data to plasma concentrations of potassium, phosphate and albumin.
+
+```{r scatterplot, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align="left", fig.width=6, fig.cap="Figure shows the progress between two observations of plasma potassium (P-K), fasting plasma phosphate (fP-Pi) and plasma albumin (P-Alb) concentrations of the studied patients. White regions in the panels show the recommended concentration levels, P-K 3.4 - 4.7 mmol/l, fP-Pi < 1.8 mmol/l and P-Alb 34 - 48 g/l. Vertical black lines denote the commonly recommended maximum intakes of these nutrients. The goal is to find personal intake levels that keep the concentrations within recommended normal ranges, if possible. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org)."}
+library(ggplot2)
+library(gridExtra)
+library(grid)
+
+pk_k_plot <- ggplot() +
+  geom_point(data=dialysis, aes(y = pk, x=kalium, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_line(data=dialysis, aes(y = pk, x=kalium, color=potilas), size=0.4, show.legend = FALSE) +
+  #geom_text(data=dialysis, aes(y = pk, x=kalium, label=potilas)) +
+  geom_vline(xintercept = 2500, linetype="solid", color = "black", size=0.5) +
+  labs(x = "Potassium (mg/d)", y = "P-K (mmol/l)") + 
+  scale_x_continuous() +
+  scale_y_continuous(breaks=c(3,3.4,4,4.7,5,6)) +
+  annotate("rect",ymin=-Inf, ymax=c(3.4), xmin=-Inf, xmax=Inf, alpha = .2) + 
+  annotate("rect",ymin=c(4.7), ymax=Inf, xmin=-Inf, xmax=Inf, alpha = .2) + 
+  theme_bw() +
+  theme(axis.title.x = element_blank(), axis.text = element_text(size=6), axis.title = element_text(size=8)) 
+
+pk_p_plot <- ggplot() +
+  geom_point(data=dialysis, aes(y = pk, x=fosfori, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_line(data=dialysis, aes(y = pk, x=fosfori, color=potilas), size=0.4, show.legend = FALSE) +
+  #geom_text(data=dialysis, aes(y = pk, x=fosfori, label=potilas)) +
+  geom_vline(xintercept = 1000, linetype="solid", color = "black", size=0.5) +
+  labs(x = "Phosphorus (mg/d)", y = "P-K (mmol/l)") + 
+  scale_x_continuous() +
+  scale_y_continuous(breaks=c(3,3.4,4,4.7,5,6)) +
+  annotate("rect",ymin=-Inf, ymax=c(3.4), xmin=-Inf, xmax=Inf, alpha = .2) + 
+  annotate("rect",ymin=c(4.7), ymax=Inf, xmin=-Inf, xmax=Inf, alpha = .2) + 
+  theme_bw() +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text = element_text(size=6), axis.title = element_text(size=8)) 
+
+fppi_k_plot <- ggplot() +
+  geom_point(data=dialysis, aes(y = fppi, x=kalium, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_line(data=dialysis, aes(y = fppi, x=kalium, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_vline(xintercept = 2500, linetype="solid", color = "black", size=0.5) +
+  scale_x_continuous() +
+  scale_y_continuous(breaks=c(1,1.8,2,3)) +
+  annotate("rect",ymax=Inf, ymin=c(1.8), xmin=-Inf, xmax=Inf, alpha = .2) + 
+  labs(x = "Potassium (mg/d)", y = "fP-Pi (mmol/l)") + 
+  theme_bw() +
+  theme(axis.title.x = element_blank(), axis.text = element_text(size=6), axis.title = element_text(size=8))
+
+fppi_p_plot <- ggplot() +
+  geom_point(data=dialysis, aes(y = fppi, x=fosfori, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_line(data=dialysis, aes(y = fppi, x=fosfori, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_vline(xintercept = 1000, linetype="solid", color = "black", size=0.5) +
+  scale_x_continuous() +
+  scale_y_continuous(breaks=c(1,1.8,2,3)) +
+  annotate("rect",ymax=Inf, ymin=c(1.8), xmin=-Inf, xmax=Inf, alpha = .2) + 
+  labs(x = "Phosphorus (mg/d)", y = "fP-Pi (mmol/l)") + theme(axis.title.x = element_blank()) +
+  theme_bw() +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text = element_text(size=6), axis.title = element_text(size=8)) 
+
+palb_k <- ggplot() +
+  geom_point(data=dialysis, aes(y = palb, x=kalium, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_line(data=dialysis, aes(y = palb, x=kalium, color=potilas), size=0.4, show.legend = FALSE) +
+  #geom_text(data=dialysis, aes(y = pk, x=kalium, label=potilas)) +
+  geom_vline(xintercept = 2500, linetype="solid", color = "black", size=0.5) +
+  labs(x = "Potassium (mg/d)", y = "P-Alb (g/l)") +
+  scale_x_continuous() +
+  scale_y_continuous(breaks=c(34,48)) +
+  annotate("rect",ymin=-Inf, ymax=c(34), xmin=-Inf, xmax=Inf, alpha = .2) + 
+  annotate("rect",ymin=c(48), ymax=Inf, xmin=-Inf, xmax=Inf, alpha = .2) + 
+  theme_bw() +
+  theme(axis.text = element_text(size=6), axis.title = element_text(size=8)) 
+
+palb_p <- ggplot() +
+  geom_point(data=dialysis, aes(y = palb, x=fosfori, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_line(data=dialysis, aes(y = palb, x=fosfori, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_vline(xintercept = 1000, linetype="solid", color = "black", size=0.5) +
+  scale_x_continuous() +
+  scale_y_continuous(breaks=c(34,48)) +
+  annotate("rect",ymin=-Inf, ymax=c(34), xmin=-Inf, xmax=Inf, alpha = .2) + 
+  annotate("rect",ymin=c(48), ymax=Inf, xmin=-Inf, xmax=Inf, alpha = .2) + 
+  labs(x = "Phosphorus (mg/d)", y = "P-Alb (g/l)") +
+  theme_bw() +
+  theme(axis.title.y = element_blank(), axis.text = element_text(size=6), axis.title = element_text(size=8)) 
+
+p <- grid.arrange(pk_k_plot, pk_p_plot, fppi_k_plot, fppi_p_plot, palb_k, palb_p, nrow = 3, ncol=2, padding=0)
+#ggsave("figures/data_scatterplot.pdf", plot = p, width = 6, height = 7, scale = 1)
+```
+
+Aim of this analysis is to find such personal levels of potassium and phosphorous intakes that keep all these concentrations in their recommended levels marked with white regions, if possible. 
+
+# Development of nutrition reaction model
+
+In this work we construct personal generative models for concentrations that allow conditioning personal diet recommendations. Essential part of these models is the personal reactions to nutrients and other predictors. Simultaneous reactions on all considered concentrations are modeled as multivariate model that has all the concentrations are response variables.
+
+For comparison, we estimate multivariate systems with and without cross-model covariance. With cross-model covariance estimated, the model corresponds to seemingly unrelated model system, and without the model is Bayesian network with separated local distributions. This more simple model is estimated first with only potassium and phosphorous concentrations as responses.
+
+```{r model_separate_univariate_preparation, echo=FALSE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+library(rstan)
+source("mebn/v2/MEBNv2.r")
+
+rstan_options (auto_write=TRUE)
+options (mc.cores=parallel::detectCores ()) 
+```
+
+```{r model_separate_univariate, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+initial_graph <- mebn.fully_connected_bipartite_graph(datadesc_fat_epros)
+
+pk_fppi_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi'),]
+
+dialdiet_gamma <- mebn.bipartite_model(reaction_graph = initial_graph, 
+                                   inputdata = dialysis,
+                                   predictor_columns = assumedpredictors_fat_epros, 
+                                   assumed_targets = pk_fppi_targets, 
+                                   group_column = "potilas",
+                                   local_estimation = mebn.sampling,
+                                   local_model_cache = "models/BLMM_gamma_separate", 
+                                   stan_model_file = "mebn/v2/BLMM_gamma.stan",
+                                   normalize_values = TRUE)
+
+# Write the generated graph in a GraphML file
+write.graph(dialdiet_gamma, "graphs/dialysis_gamma_separate.graphml", "graphml")
+```
+
+In Bayesian network both responses were estimated separately. Next, we estimate a multivariate model where both distribution are estimated during single sampling. It does not factorize into separate distributions, but allows using more data.
+
+```{r graph_with_gamma_qr_mv_epros_prep, echo=FALSE, warning=FALSE, message=FALSE}
+initial_graph <- mebn.fully_connected_bipartite_graph(datadesc_fat_epros)
+
+pk_fppi_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi'),]
+```
+
+
+```{r graph_with_gamma_qr_mv_epros, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+dialdiet_gamma_mv2_epros <- mebn.bipartite_multivariate(reaction_graph = initial_graph, 
+                                   inputdata = dialysis,
+                                   predictor_columns = assumedpredictors_fat_epros, 
+                                   assumed_targets = pk_fppi_targets, 
+                                   group_column = "potilas",
+                                   local_estimation = mebn.multivariate_sampling,
+                                   local_model_cache = 
+                                     "models/BLMM_gamma_qr_multivariate2/fat_epros", 
+                                   stan_model_file = "mebn/v2/BLMM_gamma_qr_mv.stan",
+                                   normalize_values = TRUE)
+
+write.graph(dialdiet_gamma_mv2_epros, 
+            "graphs/dialysis_gamma_multivariate2_epros.graphml", "graphml")
+```
+Next we like to add plasma albumin concentration as a third constraint in the model, but unfortunately 8 of 37 patients have missing albumin measurements. From such a small dataset we don't want to remove any patients and so we predict the missing albumin levels and impute them to dataset. 
+
+For prediction, we estimate the model without missing concentrations in P-Alb. The rows with missing values are held out from the density estimation, but patients are kept in the model for estimating their parameters.
+
+```{r graph_with_gamma_qr_mv3_epros, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+pk_fppi_palb_targets <- 
+  datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
+
+# 0/1-index for palb = NA
+holdout_index <- as.vector(as.numeric(is.na(dialysis$palb)))
+
+# Stan does not support NA in data (in Y), so let's change NA to magic number
+if (anyNA(dialysis$palb)) dialysis[is.na(dialysis$palb),]$palb <- -1
+
+initial_graph <- mebn.fully_connected_bipartite_graph(datadesc_fat_epros)
+
+dialdiet_gamma_mv3_missing_palb <- mebn.bipartite_multivariate(
+                                   reaction_graph = initial_graph, 
+                                   inputdata = dialysis,
+                                   targetdata = holdout_index,
+                                   predictor_columns = assumedpredictors_fat_epros, 
+                                   assumed_targets = pk_fppi_palb_targets, 
+                                   group_column = "potilas",
+                                   local_estimation = mebn.multivariate_sampling,
+                                   local_model_cache = 
+                                     "models/BLMM_gamma_qr_multivariate3/fat_epros_missing_palb", 
+                                   stan_model_file = "mebn/v2/BLMM_gamma_qr_mv_cv.stan",
+                                   normalize_values = TRUE)
+
+```
+# Personal data imputation models
+
+Now we can create personal models for patients that have missing plasma albumin measurements. These models are then used for making personal predictions for replacing missing values.
+
+```{r extract_personal_generative_models1, echo=TRUE, eval=TRUE, warning=FALSE, cache=TRUE, eval=FALSE}
+# Extract personal generative models for patients who have missing P-Alb values
+
+patients_with_missing_palb <- unique(as.vector(dialysis[is.na(dialysis$palb),]$potilas))
+
+# - initial graph structure
+initial_graph <- mebn.fully_connected_bipartite_graph(datadesc_fat_epros)
+
+# - previously estimated graphical model with all the persons
+local_distributions <- pk_fppi_palb_targets
+local_distributions$modelcache <- 
+  "models/BLMM_gamma_qr_multivariate3/fat_epros_missing_palb"
+
+# - get personal data, normalized and original
+
+# - statistics for vertex levels are calculated from normalized data
+predictors <- nrow(assumedpredictors_fat_epros)
+normalized_input <- sapply(1:predictors, mebn.scale_gaussians, 
+                           data = dialysis, datadesc = assumedpredictors_fat_epros)
+normalized_input_df <- as.data.frame(normalized_input)
+
+datadesc <- datadesc_fat_epros
+
+```
+
+```{r extract_personal_generative_models2, echo=FALSE, eval=TRUE, warning=FALSE, cache=TRUE, eval=FALSE}
+for (person_id in 1:length(patients_with_missing_palb)) {
+  
+  # - pick rows for the selected person
+  subject_code <- patients_with_missing_palb[person_id]
+  personal_data_df <- cbind(dialysis$potilas, normalized_input_df)
+  personal_data_df <- personal_data_df[personal_data_df$`dialysis$potilas` == subject_code,]
+  personal_data <- as.matrix(subset(personal_data_df, select = -c(`dialysis$potilas`)))
+  
+  # - store also these original stats in graph
+  personal_data_org <- subset(dialysis[dialysis$potilas == subject_code,], 
+                              select = as.vector(assumedpredictors_fat_epros$Name))
+  
+  personal_model_dir <- paste0("data_imputation_models/", subject_code)
+  
+  # Generate a personal graph in directory
+  # - This function extracts the personal model from a single level multivariate model
+  
+  personal_graph <- mebn.extract_personal_graph_from_mv(person_id, initial_graph, 
+                    personal_model_dir, assumedpredictors_fat_epros, pk_fppi_palb_targets, 
+                    "models/BLMM_gamma_qr_multivariate3/fat_epros_missing_palb", 
+                    personal_data, personal_data_org, datadesc_fat_epros)
+}
+```
+
+Then we predict missing values with these data imputing models
+
+```{r, palb_imputation1, echo=FALSE, eval=FALSE}
+library(igraph)
+source("mebn/v2/MEBNv2.r")
+
+# this vector is imputed with predicted values
+original_palb <- dialysis$palb
+imput_length <- length(original_palb)
+
+# Normalize input for predictions (as it was in the likelihood estimation)
+predictors <- nrow(assumedpredictors_fat_epros)
+normalized_input <- sapply(1:predictors, mebn.scale_gaussians, 
+                           data = dialysis, datadesc = assumedpredictors_fat_epros)
+normalized_input_df <- as.data.frame(normalized_input)
+
+normalized_input_df <- cbind(dialysis$potilas, normalized_input_df)
+normalized_input_df <- cbind(dialysis$palb, normalized_input_df)
+
+colnames(normalized_input_df) <- c("palb", "potilas", assumedpredictors_fat_epros$Name)
+rows_with_missing_palb <- normalized_input_df[is.na(normalized_input_df$palb),]
+
+```
+
+```{r, palb_imputation2, echo=TRUE, eval=FALSE}
+for (i in 1:nrow(rows_with_missing_palb)) {
+  
+  datarow <- rows_with_missing_palb[i,]
+  
+  # get model for patient in this datarow 
+  
+  personal_model_dir <- paste0("data_imputation_models/",datarow$potilas)
+  print(paste0("Reading personal data imputation model '", personal_model_dir, 
+               "/personal_graph.graphml'"))
+  
+  personal_graph <- read.graph(paste0(personal_model_dir, "/personal_graph.graphml"), "graphml")
+  
+  # and use the data in this row to predict palb
+  evidence <- rows_with_missing_palb[i, assumedpredictors_fat_epros$Name]
+
+  posterior_prediction <- mebn.personal_prediction(reaction_graph = personal_graph, 
+                                 graph_dir = personal_model_dir,
+                                 evidence = evidence,
+                                 stan_model_file = "diet/posterior_prediction.stan")
+  
+  # personal_predictions contains predictions multivariate predictions
+  # P-K and fP-Pi are known, but P-Alb is missing
+  
+  posterior <- rstan::extract(posterior_prediction, par= "posterior[3]")
+  
+  # use predicted posterior mean for missing P-Alb value
+  # - this is i:th NA value in dialysis
+  predicted_palb <- mean(posterior$`posterior[3]`)
+  
+  # rows in 'rows_with_missing_palb' and 'original_palb' are in same order
+  # so we can imput in the NA values at 'original_palb'
+  
+  for (m in 1:imput_length)
+  {
+      if (is.na(original_palb[m]))
+      {
+          original_palb[m] <- predicted_palb
+          break;
+      }
+  }
+}
+
+dialysis2 <- dialysis
+dialysis2$palb <- original_palb
+saveRDS(dialysis2, "data/DIALYSIS_imputed_palb.rds")
+```
+
+```{r, palb_imputation3, echo=FALSE, eval=FALSE}
+write.csv2(dialysis2, file="data/DIALYSIS_imputed_palb.csv", row.names = FALSE, sep = ";")
+```
+
+With these data imputations we can estimate a cross-covariance model with three responses
+
+```{r graph_with_gamma_qr_mv3_full_prep, echo=TRUE}
+pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
+
+initial_graph <- mebn.fully_connected_bipartite_graph(datadesc_fat_epros)
+```
+
+```{r graph_with_gamma_qr_mv3_full, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
+no_holdout <- rep(0, nrow(dialysis_imputed))
+
+dialdiet_gamma_mv3 <- mebn.bipartite_multivariate(reaction_graph = initial_graph, 
+                                   inputdata = dialysis_imputed,
+                                   targetdata = no_holdout,
+                                   predictor_columns = assumedpredictors_fat_epros, 
+                                   assumed_targets = pk_fppi_palb_targets, 
+                                   group_column = "potilas",
+                                   local_estimation = mebn.multivariate_sampling,
+                                   local_model_cache = 
+                                     "models/BLMM_gamma_qr_multivariate3/imputed_palb", 
+                                   stan_model_file = "mebn/v2/BLMM_gamma_qr_mv_cv.stan",
+                                   normalize_values = TRUE)
+
+write.graph(dialdiet_gamma_mv3, 
+            "graphs/dialysis_gamma_multivariate3_imputed.graphml", "graphml")
+```
+
+Finally, we consider also the effect of dialysis treatment type as new level of grouping in data. This allows us to estimate average effects of nutrition for each treatment type and then also personal effects within those treatments.
+
+```{r graph_with_gamma_qr_mvcross_two_levels, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
+no_holdout <- rep(0, nrow(dialysis_imputed))
+
+initial_graph <- mebn.fully_connected_bipartite_graph(datadesc_fat_epros)
+
+dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
+
+# add the dialysis treatment type as a grouping factor
+dialysis_imputed$hoitoryhma <- as.factor(dialysis_imputed$hoitomuoto)
+
+# and sort the data by treatment/patient/observation
+dialysis_imputed <- dialysis_imputed[order(dialysis_imputed$hoitoryhma, 
+                                           dialysis_imputed$potilas, dialysis_imputed$havainto),]
+
+dialdiet_gamma_mv3_two_level <- mebn.bipartite_two_level_multivariate(
+                                   reaction_graph = initial_graph, 
+                                   inputdata = dialysis_imputed,
+                                   targetdata = no_holdout,
+                                   predictor_columns = assumedpredictors_fat_epros, 
+                                   assumed_targets = pk_fppi_palb_targets, 
+                                   group_column = "hoitoryhma",
+                                   subject_column = "potilas",
+                                   local_estimation = mebn.two_level_multivariate_sampling,
+                                   local_model_cache = 
+                                     "models/BLMM_gamma_mv_cross/two_levels", 
+                                   stan_model_file = 
+                                     "mebn/v2/BLMM_gamma_two_level_grouping.stan",
+                                   normalize_values = TRUE)
+
+write.graph(dialdiet_gamma_mv3_two_level, 
+            "graphs/dialysis_gamma_two_level_grouping.graphml", "graphml")
+```
+
+# Model analysis
+
+Here we evaluate the model's ability to repeat the measured observations with normalized root mean square error (NRMSE) and compare how adding the dialysis treatment as an explicit hierarchical layer in the model affects this error. We also asses the model's performance with visual posterior predictive check by comparing samples from the model with measured values. This would give away possible bias in the model.
+
+
+```{r extract_personal_generative_models, eval=FALSE, echo=FALSE}
+source("mebn/v2/MEBNv2.r")
+
+# Extract generative models for patients with data from personal grouping
+
+# - latent parameters from this model
+latent_parameter_modeldir <- "models/BLMM_gamma_mv_cross/two_levels"
+#latent_parameter_modeldir <- "models/BLMM_gamma_qr_multivariate3/imputed_palb/"
+#latent_parameter_modeldir <- "models/BLMM_gamma_separate/"
+
+# - use these predictors and targets
+datadesc <- datadesc_fat_epros
+target_variables <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
+#target_variables <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi'),]
+assumedpredictors <- assumedpredictors_fat_epros
+
+# - output personal generative models (graphml + rv samples) in this dir
+graph_dir <- "graphs/mv3_cross_two_levels/"
+#graph_dir <- "graphs/mv3_cross/"
+#graph_dir <- "graphs/separate_pk_fppi/"
+
+# Loop through patients and produce the models
+
+dialysis <- readRDS("data/DIALYSIS_imputed_palb.rds")
+
+# add the dialysis treatment type as a grouping factor
+dialysis$hoitoryhma <- as.factor(dialysis$hoitomuoto)
+
+patients <- levels(dialysis$potilas)
+
+#for (person_id in 1:length(patients)) {
+
+for (person_id in 1:37) {
+  
+  # - initial graph structure
+  initial_graph <- mebn.fully_connected_bipartite_graph(datadesc)
+  
+  # - pick the estimated latent variables for all the persons
+  local_distributions <- target_variables
+  local_distributions$modelcache <- latent_parameter_modeldir
+  
+  # - get personal data, normalized and original
+  
+  # - statistics for the nutrition levels are calculated from normalized data (as it was in the likelihood estimation)
+  predictors <- nrow(assumedpredictors)
+  normalized_input <- sapply(1:predictors, mebn.scale_gaussians, data = dialysis, datadesc = assumedpredictors, log_transform_ln = FALSE)
+  normalized_input_df <- as.data.frame(normalized_input)
+  
+  # - pick rows for the selected person
+  subject_code <- levels(dialysis$potilas)[person_id]
+  personal_data_df <- cbind(dialysis$potilas, normalized_input_df)
+  personal_data_df <- personal_data_df[personal_data_df$`dialysis$potilas` == subject_code,]
+  personal_data <- as.matrix(subset(personal_data_df, select = -c(`dialysis$potilas`)))
+  
+  # - store also these original stats in graph
+  personal_data_org <- subset(dialysis[dialysis$potilas == subject_code,], select = as.vector(assumedpredictors$Name))
+  personal_concentrations_org <- subset(dialysis[dialysis$potilas == subject_code,], select = as.vector(assumedtargets$Name))
+  
+  personal_model_dir <- paste0(graph_dir, person_id)
+  
+  # Generate a personal graph in directory
+  
+  group_id <- as.numeric(unique(dialysis[dialysis$potilas == subject_code,]$hoitoryhma))
+
+  # one-level, univariate models
+  #personal_graph <- mebn.extract_personal_graph(person_id, initial_graph, personal_model_dir, assumedpredictors, target_variables, latent_parameter_modeldir, personal_data, personal_data_org)
+
+  # one-level model
+  #personal_graph <- mebn.extract_personal_graph_from_mv(person_id, initial_graph, personal_model_dir, assumedpredictors, assumedtargets, latent_parameter_modeldir, personal_data, personal_data_org, personal_concentrations_org, datadesc)
+
+  # two-level model
+  personal_graph <- mebn.extract_multilevel_graph(person_id, group_id, initial_graph, personal_model_dir, assumedpredictors, assumedtargets, latent_parameter_modeldir, personal_data, personal_data_org, personal_concentrations_org, datadesc)
+  
+}
+
+```
+
+
+```{r simulated_MSE, eval=FALSE, echo=FALSE}
+library(igraph)
+source("mebn/v2/MEBNv2.r")
+
+potassium_org_mean <- mean(dialysis$kalium) # 2755
+potassium_org_sd <- sd(dialysis$kalium) # 949
+  
+phosphorous_org_mean <- mean(dialysis$fosfori) # 2755
+phosphorous_org_sd <- sd(dialysis$fosfori) # 949
+
+pk_mean <- mean(dialysis$pk)
+fppi_mean <- mean(dialysis$fppi)
+palb_mean <- mean(dialysis$palb, na.rm = TRUE)
+
+mse_summary <- data.frame(matrix(ncol = 5, nrow = 0), row.names = NULL)
+
+#model_dir_candidates <- c("mv3_cross_two_levels", "mv3_cross")
+model_dir_candidates <- c("separate_pk_fppi")
+
+for (model_dir in model_dir_candidates) {
+
+  graph_dir <- paste0("graphs/",model_dir,"/")
+
+  for (person_id in 1:37) {
+  
+    print(paste0("Simulating patient ", person_id))
+  
+    subject_code <- levels(dialysis$potilas)[person_id]
+    treatment <- unique(dialysis[dialysis$potilas == subject_code,]$hoitomuoto)
+    
+    # Normal ranges of concentration are personalized
+    personal_info <- head(dialysis[dialysis$potilas == subject_code,],1)
+    recommeded_concentrations <- mebn.get_personal_target_guidelines(personal_info, patient_in_dialysis = TRUE)
+    
+    # Omit P-Alb
+    recommeded_concentrations$lower_limits <- recommeded_concentrations$lower_limits[1:2]
+    recommeded_concentrations$upper_limits <- recommeded_concentrations$upper_limits[1:2]
+    
+    personal_model_dir <- paste0(graph_dir,person_id)
+    personal_graph <- read.graph(paste0(personal_model_dir, "/personal_graph.graphml"), "graphml")
+    
+    # Sample diet proposals and matching concentration predictions
+    
+    # Omit P-Alb
+    V(personal_graph)["palb"]$type <- 300
+    
+    repeat_model <- mebn.Query(reaction_graph = personal_graph,
+                           graph_dir = personal_model_dir,
+                           queried_nodes = c("kalium","fosfori"),
+                           query = recommeded_concentrations,
+                           proposal_limits = c(((0 - potassium_org_mean) / potassium_org_sd),
+                                             ((5800 - potassium_org_mean) / potassium_org_sd),
+                                             ((0 - phosphorous_org_mean) / phosphorous_org_sd),
+                                             ((2550 - phosphorous_org_mean) / phosphorous_org_sd)),                         
+                           stan_model_file = "diet/multivariate_intake_recommendation.stan",
+                           conc_lower_limits = as.vector(recommeded_concentrations$lower_limits),
+                           conc_upper_limits = as.vector(recommeded_concentrations$upper_limits),
+                           beta_point_est = "mean",
+                           param_point_est = "mean",
+                           X_point_est = "mean",
+                           posterior_samples = 1,
+                           X_sd_coef = 1,
+                           repeat_only = 1)
+  
+    repeats <- rstan::extract(repeat_model)
+   
+    pk <- repeats$concentration[,,1]
+    fppi <- repeats$concentration[,,2]
+    #palb <- repeats$concentration[,,3]
+     
+    true_concs <- dialysis %>%
+         filter(potilas == subject_code) %>%
+         select(havainto, pk, fppi, palb)
+    
+    personal_mse <- cbind(subject_code,
+                              model_dir,
+                              mebn.NRMSE(mean(pk), mean(true_concs$pk), pk_mean),
+                              mebn.NRMSE(mean(fppi), mean(true_concs$fppi), fppi_mean),
+                              mebn.NRMSE(mean(palb), mean(true_concs$palb), palb_mean))
+
+    # personal_mse <- cbind(subject_code,
+    #                           model_dir,
+    #                           mebn.NRMSE(mean(pk), mean(true_concs$pk), pk_mean),
+    #                           mebn.NRMSE(mean(fppi), mean(true_concs$fppi), fppi_mean))
+
+    mse_summary <- rbind(mse_summary, personal_mse)
+  }
+}
+
+colnames(mse_summary) <- c("subject", "reaction_model", "pk_nrmse", "fppi_nrmse", "palb_nrmse")
+#colnames(mse_summary) <- c("subject", "reaction_model", "pk_nrmse", "fppi_nrmse")
+
+saveRDS(mse_summary, "model_evaluation/NRMSE_comparison_mv_models.rds")
+#saveRDS(mse_summary, "model_evaluation/NRMSE_comparison_uni_model.rds")
+
+write.csv2(mse_summary, file="model_evaluation/NRMSE_comparison_mv_models.csv", row.names = FALSE)
+#write.csv2(mse_summary, file="model_evaluation/NRMSE_comparison_uni_model.csv", row.names = FALSE)
+
+```
+
+```{r MSE_table, cache=TRUE, echo=FALSE}
+
+uni_mse_summary <- readRDS("model_evaluation/NRMSE_comparison_uni_model.rds")
+mse_summary <- readRDS("model_evaluation/NRMSE_comparison_mv_models.rds")
+
+uni_pk_mse <- mean(as.numeric(uni_mse_summary$pk_nrmse), na.rm=TRUE)
+uni_fppi_mse <- mean(as.numeric(uni_mse_summary$fppi_nrmse), na.rm=TRUE)
+
+mv3c2_pk_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels",]$pk_nrmse)) # 0.004475995
+mv3c2_fppi_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels",]$fppi_nrmse)) # 0.006727212
+mv3c2_palb_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels",]$palb_nrmse), na.rm=TRUE) # 0.001819183
+
+mv3c1_pk_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3_cross",]$pk_nrmse), na.rm=TRUE) # 0.03623973
+mv3c1_fppi_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3_cross",]$fppi_nrmse), na.rm=TRUE) # 0.1298725
+mv3c1_palb_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3_cross",]$palb_nrmse), na.rm=TRUE) # 0.05903203
+
+unic1 <- cbind("separate_pk_fppi", uni_pk_mse, uni_fppi_mse, 0, mean(uni_pk_mse, uni_fppi_mse))
+mv3c1 <- cbind("mv3_cross_single_level", mv3c1_pk_mse, mv3c1_fppi_mse, mv3c1_palb_mse, mean(mv3c1_pk_mse, mv3c1_fppi_mse, mv3c1_palb_mse))
+mv3c2 <- cbind("mv3_cross_two_levels", mv3c2_pk_mse, mv3c2_fppi_mse, mv3c2_palb_mse, mean(mv3c2_pk_mse, mv3c2_fppi_mse, mv3c2_palb_mse))
+
+mse_table <- rbind(mv3c2, mv3c1, unic1)
+mse_table[,2:5] <- round(as.numeric(mse_table[,2:5]),3)
+
+kable(mse_table, "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3,align="lrrrr",
+  caption = "Comparison of model candidates. Personal graphical models with different reaction model candidates are evaluated with NRMSE for each modeled concentration and average model error.",
+  col.names = c("Reaction model", "P-K", "fP-Pi", "P-Alb", "average error")) %>%
+  add_header_above(c(" " = 1, "NRMSE" = 4), escape = F) %>%
+  kable_styling(latex_options = "HOLD_position") %>%
+  kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) 
+
+#%>%
+#  row_spec(0,bold=TRUE) %>% save_kable(file = "tables/model_nrmse_comparison.pdf", keep_tex = TRUE)
+
+```
+
+```{r dialysis_gamma_mv_cross_2levels_ppc, echo=FALSE, message=FALSE, warning=FALSE, eval=TRUE, cache=TRUE, fig.cap="Posterior predictive check of the model where three concentrations and their parameters are stacked into one univariate model for estimating cross-model correlations."}
+#source("mebn/v2/MEBNv2.r")
+dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
+pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
+
+p <- mebn.multivariate_dens_overlays("models/BLMM_gamma_mv_cross/two_levels", pk_fppi_palb_targets, dialysis_imputed) 
+#ggsave("figures/ppc_mv3_cross.pdf", plot = p, width = 4, height = 4)
+p
+```
+
+```{r, eval=FALSE, typical_effects_figure, fig.cap="This visualization shows mean of posterior for typical coefficients as weight of the connection between blood concentrations and nutrients at diet affecting it. The figure is plotted with iGraph package for R language (v 1.2.6, https://igraph.org/r).", fig.height = 4, fig.width=5, echo=FALSE, fig.align = "left", message=FALSE, warning=FALSE, cache=FALSE}
+
+require(igraph)
+source("mebn/v2/MEBNv2.r")
+dialysis_mv3cross_treatment <- read_graph("graphs/dialysis_gamma_two_level_grouping.graphml", "graphml")
+
+graph_layout <- mebn.plot_typical_effects(dialysis_mv3cross_treatment, 20, graph_layout = NULL)
+```
+
+Then we look into the estimated correlation matrices of effects. The model estimates how much the effects of nutrients vary between different types of dialysis treatment and further how the effects vary personally within a treatment. These correlation plots show how the effects are correlated. 
+
+```{r, subject_effect_correlations, eval=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+library(rstan)
+library(ggcorrplot)
+
+#target_blmm <- mebn.get_localfit("pk_fppi_palb", "models/BLMM_gamma_mv_cross")
+target_blmm <- mebn.get_localfit("pk_fppi_palb", "models/BLMM_gamma_mv_cross/two_levels")
+
+C_extract <- rstan::extract(target_blmm, pars = c("C_s"))
+
+C_cross_draws <- C_extract$C[,,]
+C_cross <- apply(C_cross_draws, 2:3, mean)
+
+# remove variance from diagonal
+diag(C_cross) <- 0
+
+C_cross.df <- as.data.frame(C_cross)
+
+colnames(C_cross.df) <- c("P-K level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-K", sep = ""), "fP-Pi level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> fP-Pi", sep = ""), "P-Alb level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-Alb", sep = ""))
+rownames(C_cross.df) <- c("P-K level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-K", sep = ""), "fP-Pi level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> fP-Pi", sep = ""), "P-Alb level", paste(as.vector(assumedpredictors_fat_epros$Description), "-> P-Alb", sep = ""))
+
+saveRDS(C_cross.df, "subject_effect_correlations_df.rds")
+
+# Custom corrplot
+# library(reshape2)   
+# 
+# C_cross.df
+# 
+# ggplot(melt(C_cross.df), aes(Var1, Var2, fill=value)) +
+#   geom_tile(height=0.8, width=0.8) +
+#   scale_fill_gradient2(low="blue", mid="white", high="red") +
+#   theme_minimal() +
+#   coord_equal() +
+#   labs(x="",y="",fill="Corr") +
+#   theme(axis.text.x=element_text(size=13, angle=45, vjust=1, hjust=1, 
+#                                  margin=margin(-3,0,0,0)),
+#         axis.text.y=element_text(size=13, margin=margin(0,-3,0,0)),
+#         panel.grid.major=element_blank()) 
+
+```
+
+```{r, treatment_effect_correlations, eval=FALSE, echo=FALSE}
+library(rstan)
+library(ggcorrplot)
+
+#target_blmm <- mebn.get_localfit("pk_fppi_palb", "models/BLMM_gamma_mv_cross")
+target_blmm <- mebn.get_localfit("pk_fppi_palb", "models/BLMM_gamma_mv_cross/two_levels")
+
+C_extract <- rstan::extract(target_blmm, pars = c("C_g"))
+
+C_cross_draws <- C_extract$C[,,]
+C_cross <- apply(C_cross_draws, 2:3, mean)
+
+# remove variance from diagonal
+diag(C_cross) <- 0
+
+C_cross.df <- as.data.frame(C_cross)
+
+colnames(C_cross.df) <- c("P-K level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-K", sep = ""), "fP-Pi level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> fP-Pi", sep = ""), "P-Alb level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-Alb", sep = ""))
+rownames(C_cross.df) <- c("P-K level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-K", sep = ""), "fP-Pi level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> fP-Pi", sep = ""), "P-Alb level", paste(as.vector(assumedpredictors_fat_epros$Description), "-> P-Alb", sep = ""))
+
+saveRDS(C_cross.df, "dialysis_effect_correlations_df.rds")
+
+```
+
+```{r, treatment_effect_correlation_plot, fig.width=14, fig.out="100%", fig.align="left", eval=TRUE, cache=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggcorrplot)
+
+C_cross.df <- readRDS("dialysis_effect_correlations_df.rds")
+
+p <- nrow(assumedpredictors_fat_epros) + 1
+
+cplot <- ggcorrplot(C_cross.df, hc.order = FALSE, lab = FALSE, type="lower") +
+  scale_fill_gradient2(limit = c(min(C_cross.df),max(C_cross.df)), low = "blue", high = "red", mid = "white", midpoint = 0) +
+  ggplot2::labs(x = NULL, y = NULL) +  
+  ggplot2::theme(
+    plot.title = element_text(size = 10),
+    axis.title.x = element_text(angle = 0, color = 'grey20'),
+    axis.title.y = element_text(angle = 90, color = 'grey20'),
+    axis.text.x = element_text(size = 8),
+    axis.text.y = element_text(size = 8),
+    legend.text = element_text(size = 8),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    plot.margin = margin(t = 0,  # Top margin
+                         r = 0,  # Right margin
+                         b = 0,  # Bottom margin
+                         l = 0) # Left margin
+ ) +
+ggplot2::geom_vline(xintercept = c(p,2*p), linetype="solid", color = "grey", size=1) +
+ggplot2::geom_hline(yintercept = c(p,2*p), linetype="solid", color = "grey", size=1)
+
+ggsave(paste0("figures/treatment_level_reaction_correlations.pdf"), plot = cplot, width = 15, height = 15, scale = 0.7)
+
+```
+```{r, subject_effect_correlation_plot, fig.width=14, fig.out="100%", fig.align="left", eval=TRUE, cache=FALSE, echo=FALSE}
+library(ggcorrplot)
+
+C_cross.df <- readRDS("subject_effect_correlations_df.rds")
+
+p <- nrow(assumedpredictors_fat_epros) + 1
+
+cplot <- ggcorrplot(C_cross.df, hc.order = FALSE, lab = FALSE, type="lower") +
+  scale_fill_gradient2(limit = c(min(C_cross.df),max(C_cross.df)), low = "blue", high = "red", mid = "white", midpoint = 0) +
+  ggplot2::labs(x = NULL, y = NULL) +  
+  ggplot2::theme(
+    plot.title = element_text(size = 10),
+    axis.title.x = element_text(angle = 0, color = 'grey20'),
+    axis.title.y = element_text(angle = 90, color = 'grey20'),
+    axis.text.x = element_text(size = 8),
+    axis.text.y = element_text(size = 8),
+    legend.text = element_text(size = 8),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    plot.margin = margin(t = 0,  # Top margin
+                         r = 0,  # Right margin
+                         b = 0,  # Bottom margin
+                         l = 0) # Left margin
+ ) +
+ggplot2::geom_vline(xintercept = c(p,2*p), linetype="solid", color = "grey", size=1) +
+ggplot2::geom_hline(yintercept = c(p,2*p), linetype="solid", color = "grey", size=1)
+
+ggsave(paste0("figures/subject_level_reaction_correlations.pdf"), plot = cplot, width = 15, height = 15, scale = 0.7)
+
+```
+
+```{r, include=TRUE, fig.align="center", fig.cap=c("Correlation plot of matrix $C_g$ that includes the estimated within-model and cross-model correlations in level of dialysis treatment"), echo=FALSE}
+knitr::include_graphics("figures/treatment_level_reaction_correlations.pdf")
+```
+
+```{r, include=TRUE, fig.align="center", fig.cap=c("Correlation plot of matrix $C_b$ that includes the estimated within-model and cross-model correlations of personal effects"), echo=FALSE}
+knitr::include_graphics("figures/subject_level_reaction_correlations.pdf")
+```
+
+```{r, top_treatment_correlations, eval=TRUE, cache=FALSE, echo=FALSE}
+C_cross_g.df <- readRDS("dialysis_effect_correlations_df.rds")
+
+effect_cor.df <- data.frame(matrix(ncol = 3, nrow = 0), row.names = NULL)
+
+for (x in 1:dim(C_cross_g.df)[1])
+{
+  for (y in 1:dim(C_cross_g.df)[2])
+  {
+    eff <- C_cross_g.df[x,y]
+    from <- colnames(C_cross_g.df)[x]
+    to <- rownames(C_cross_g.df)[y]
+    
+    effect_cor.df <- rbind(effect_cor.df, c(from,to,round(eff,3),abs(eff)))
+  }
+}
+
+colnames(effect_cor.df) <- c("effect1", "effect2", "corr", "abs_effect")
+
+effect_cor.df$corr <- as.numeric(effect_cor.df$corr)
+effect_cor.df$abs_effect <- as.numeric(effect_cor.df$abs_effect)
+
+# fix effect names for table
+effect_cor.df$effect1 <- unlist(lapply(strsplit(effect_cor.df$effect1, ":"), function(x) ifelse(is.na(x[2]), x[1], paste0(x[2]," -> ",x[1]))))
+effect_cor.df$effect2 <- unlist(lapply(strsplit(effect_cor.df$effect2, ":"), function(x) ifelse(is.na(x[2]), x[1], paste0(x[2]," -> ",x[1]))))
+
+top_correlations <- effect_cor.df %>% 
+  top_n(60, abs_effect) %>%
+  select("effect1","effect2","corr") %>%
+  arrange(-corr) %>%
+  slice(which(row_number() %% 2 == 1))
+
+#kable(top_correlations, "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect 1", "Effect 2", "Correlation"), caption = "Table shows 30 highest positive or negative correlations between effects of dialysis treatment type.") %>%
+#    kable_styling(latex_options = "HOLD_position") %>%
+#    kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) %>%
+#    add_header_above(c("Effects of nutrients in dialysis treatment level" = 2, " " = 1), escape = F) %>%
+#    row_spec(0,bold=TRUE)
+
+top_pot_correlations <- effect_cor.df %>%
+  filter(substr(effect2,1,9) == "Potassium") %>%
+  top_n(40, abs_effect) %>%
+  select("effect1","effect2","corr") %>%
+  arrange(-corr) %>%
+  slice(which(row_number() %% 2 == 1))
+
+top_pho_correlations <- effect_cor.df %>%
+  filter(substr(effect2,1,11) == "Phosphorous") %>%
+  top_n(40, abs_effect) %>%
+  select("effect1","effect2","corr") %>%
+  arrange(-corr) %>%
+  slice(which(row_number() %% 2 == 1))
+
+kable(rbind(top_pot_correlations, top_pho_correlations), "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect 1", "Effect 2", "Correlation"), caption = "Table shows 40 highest positive or negative correlations between treatment effects of potassium and phosphorous with other treatment effects. This structure of correlations is used in estimating the personal effects based on personal intake and matching concentrations.") %>%
+    kable_styling(latex_options = "HOLD_position") %>%
+    kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) %>%
+    add_header_above(c("Treatment-level effects of nutrients" = 2, " " = 1), escape = F) %>%
+    row_spec(0,bold=TRUE)
+  
+  #    save_kable(file = "tables/treatment_pot_and_pho_effect_correlations.pdf", keep_tex = TRUE)
+
+```
+
+
+```{r, top_subject_correlations, eval=TRUE, cache=FALSE, echo=FALSE}
+C_cross_s.df <- readRDS("subject_effect_correlations_df.rds")
+
+effect_cor.df <- data.frame(matrix(ncol = 3, nrow = 0), row.names = NULL)
+
+for (x in 1:dim(C_cross_s.df)[1])
+{
+  for (y in 1:dim(C_cross_s.df)[2])
+  {
+    eff <- C_cross_s.df[x,y]
+    from <- colnames(C_cross_s.df)[x]
+    to <- rownames(C_cross_s.df)[y]
+    
+    effect_cor.df <- rbind(effect_cor.df, c(from,to,round(eff,3),abs(eff)))
+  }
+}
+
+colnames(effect_cor.df) <- c("effect1", "effect2", "corr", "abs_effect")
+
+effect_cor.df$corr <- as.numeric(effect_cor.df$corr)
+effect_cor.df$abs_effect <- as.numeric(effect_cor.df$abs_effect)
+
+# fix effect names for table
+effect_cor.df$effect1 <- unlist(lapply(strsplit(effect_cor.df$effect1, ":"), function(x) ifelse(is.na(x[2]), x[1], paste0(x[2]," -> ",x[1]))))
+effect_cor.df$effect2 <- unlist(lapply(strsplit(effect_cor.df$effect2, ":"), function(x) ifelse(is.na(x[2]), x[1], paste0(x[2]," -> ",x[1]))))
+
+top_correlations <- effect_cor.df %>% 
+  top_n(60, abs_effect) %>%
+  select("effect1","effect2","corr") %>%
+  arrange(-corr) %>%
+  slice(which(row_number() %% 2 == 1))
+
+#kable(top_correlations, "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect 1", "Effect 2", "Correlation"), caption = "Table shows 30 highest positive or negative correlations between personal effects of nutrients or other considered predictors. This structure of correlations is used in estimating the personal effects based on personal intake and matching concentrations.") %>%
+#    kable_styling(latex_options = "HOLD_position") %>%
+#    kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) %>%
+#    add_header_above(c("Personal effects of nutrients" = 2, " " = 1), escape = F) %>%
+#    row_spec(0,bold=TRUE)
+
+
+top_pot_correlations <- effect_cor.df %>%
+  filter(substr(effect2,1,9) == "Potassium") %>%
+  top_n(40, abs_effect) %>%
+  select("effect1","effect2","corr") %>%
+  arrange(-corr) %>%
+  slice(which(row_number() %% 2 == 1))
+
+top_pho_correlations <- effect_cor.df %>%
+  filter(substr(effect2,1,11) == "Phosphorous") %>%
+  top_n(40, abs_effect) %>%
+  select("effect1","effect2","corr") %>%
+  arrange(-corr) %>%
+  slice(which(row_number() %% 2 == 1))
+
+kable(rbind(top_pot_correlations, top_pho_correlations), "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect 1", "Effect 2", "Correlation"), caption = "Table shows 40 highest positive or negative correlations between personal effects of potassium and phosphorous with other personal effects. This structure of correlations is used in estimating the personal effects based on personal intake and matching concentrations.") %>%
+    kable_styling(latex_options = "HOLD_position") %>%
+    kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) %>%
+    add_header_above(c("Personal effects of nutrients" = 2, " " = 1), escape = F) %>%
+    row_spec(0,bold=TRUE)
+
+#    save_kable(file = "tables/subject_pot_and_pho_effect_correlations.pdf", keep_tex = TRUE)
+
+```
+
+```{r build_two_level_effect_summary, echo=FALSE, eval=FALSE}
+
+library(igraph)
+graph_dir <- "graphs/mv3_cross_two_levels/"
+
+# - collect personal statistics in this data frame
+effect_summary <- data.frame(matrix(ncol = 17, nrow = 0), row.names = NULL)
+
+for (person_id in 1:37) {
+    
+  personal_model_dir <- paste0(graph_dir,person_id)
+  personal_graph <- read.graph(paste0(personal_model_dir, "/personal_graph.graphml"), "graphml")
+  
+  subject_code <- levels(dialysis$potilas)[person_id]
+  treatment <- unique(dialysis[dialysis$potilas == subject_code,]$hoitomuoto)
+
+  for (c in 1:dim(assumedtargets)[1])
+  {
+    target_column <- assumedtargets[c,]
+    target_name <- as.vector(target_column$Name)
+    
+    predictor_names <- as.vector(assumedpredictors_fat_epros$Name)
+    
+    for (p in 1:dim(assumedpredictors_fat_epros)[1])
+    {
+      predictor_name <- predictor_names[p]
+    
+      effect_name <- paste0(predictor_name,"_",target_name)
+        
+      nodes <- V(personal_graph)
+  
+      personal_effects <- c(person_id,
+                            effect_name,
+                            nodes[paste0(effect_name)]$value,
+                            nodes[paste0(effect_name)]$mode,
+                            nodes[paste0(effect_name)]$value_lCI,
+                            nodes[paste0(effect_name)]$value_uCI,
+                            nodes[paste0("sigma_g_", effect_name)]$value,
+                            nodes[paste0("sigma_g_", effect_name)]$value_lCI,
+                            nodes[paste0("sigma_g_", effect_name)]$value_uCI,
+                            nodes[paste0("sigma_b_", effect_name)]$value,
+                            nodes[paste0("sigma_b_", effect_name)]$value_lCI,
+                            nodes[paste0("sigma_b_", effect_name)]$value_uCI,
+                            treatment,
+                            nodes[paste0("personal_", effect_name)]$group,
+                            nodes[paste0("personal_", effect_name)]$group_mode,
+                            nodes[paste0("personal_", effect_name)]$group_lCI,
+                            nodes[paste0("personal_", effect_name)]$group_uCI,
+                            nodes[paste0("personal_", effect_name)]$value,
+                            nodes[paste0("personal_", effect_name)]$mode,
+                            nodes[paste0("personal_", effect_name)]$value_lCI,
+                            nodes[paste0("personal_", effect_name)]$value_uCI)
+  
+  
+      effect_summary <- rbind(effect_summary,personal_effects)
+    }
+  }
+
+}
+
+colnames(effect_summary) <- c("person_id", "effect", "general_effect", "general_effect_mode", "general_effect_lCI", "general_effect_uCI", "sigma_g", "sigma_g_lCI", "sigma_g_uCI", "sigma_b", "sigma_b_lCI", "sigma_b_uCI", "treatment_group", "group_effect", "group_effect_mode", "group_effect_lCI", "group_effect_uCI", "personal_effect", "personal_effect_mode","personal_effect_lCI","personal_effect_uCI")
+
+saveRDS(effect_summary, "patient_summary/two_level_effect_summary.rds")
+
+```
+
+# Overview of nutritional effects
+
+```{r effect_summary_table, eval=TRUE, cache=FALSE, echo=FALSE}
+library(dplyr)
+
+effect_summary <- readRDS("patient_summary/two_level_effect_summary.rds")
+
+general_summary <- effect_summary %>% 
+  arrange(effect) %>%
+  select(effect, 
+         general_effect, 
+         general_effect_mode, 
+         general_effect_lCI, 
+         general_effect_uCI, 
+         sigma_g, 
+         sigma_g_lCI, 
+         sigma_g_uCI, 
+         sigma_b, 
+         sigma_b_lCI, 
+         sigma_b_uCI) %>%
+  group_by(effect) %>%
+  dplyr::summarise(
+                general_effect = as.numeric(dplyr::first(general_effect)),
+                general_effect_mode = as.numeric(dplyr::first(general_effect_mode)),
+                general_effect_lCI = as.numeric(dplyr::first(general_effect_lCI)),
+                general_effect_uCI = as.numeric(dplyr::first(general_effect_uCI)),
+                sigma_g = as.numeric(dplyr::first(sigma_g)),
+                sigma_g_lCI = as.numeric(dplyr::first(sigma_g_lCI)),
+                sigma_g_uCI = as.numeric(dplyr::first(sigma_g_uCI)),
+                sigma_b = as.numeric(dplyr::first(sigma_b)),
+                sigma_b_lCI = as.numeric(dplyr::first(sigma_b_lCI)),
+                sigma_b_uCI = as.numeric(dplyr::first(sigma_b_uCI))
+                )
+
+KHD_summary <- effect_summary %>% 
+  arrange(effect) %>%
+  select(effect, 
+         treatment_group,
+         group_effect,
+         group_effect_mode,
+         group_effect_lCI,
+         group_effect_uCI,
+         personal_effect,
+         personal_effect_mode,
+         personal_effect_lCI,
+         personal_effect_uCI) %>%
+  filter(treatment_group == "KHD") %>%
+  group_by(effect) %>%
+  dplyr::summarise(
+                KHD_effect = as.numeric(dplyr::first(group_effect)),
+                KHD_effect_mode = as.numeric(dplyr::first(group_effect_mode)),
+                KHD_effect_lCI = as.numeric(dplyr::first(group_effect_lCI)),
+                KHD_effect_uCI = as.numeric(dplyr::first(group_effect_uCI)),
+                min_personal_KHD = min(as.numeric(personal_effect)),
+                min_personal_mode_KHD = min(as.numeric(personal_effect_mode)),
+                min_personal_KHD_lCI = as.numeric(personal_effect_lCI[which.min(as.numeric(personal_effect))]),
+                min_personal_KHD_uCI = as.numeric(personal_effect_uCI[which.min(as.numeric(personal_effect))]),
+                max_personal_KHD = max(as.numeric(personal_effect)),
+                max_personal_mode_KHD = max(as.numeric(personal_effect_mode)),
+                max_personal_KHD_lCI = as.numeric(personal_effect_lCI[which.max(as.numeric(personal_effect))]),
+                max_personal_KHD_uCI = as.numeric(personal_effect_uCI[which.max(as.numeric(personal_effect))])
+  )
+
+OHD_summary <- effect_summary %>% 
+  arrange(effect) %>%
+  select(effect, 
+         treatment_group,
+         group_effect,
+         group_effect_mode,
+         group_effect_lCI,
+         group_effect_uCI,
+         personal_effect,
+         personal_effect_mode,
+         personal_effect_lCI,
+         personal_effect_uCI) %>%
+  filter(treatment_group == "OHD") %>%
+  group_by(effect) %>%
+  dplyr::summarise(
+                OHD_effect = as.numeric(dplyr::first(group_effect)),
+                OHD_effect_mode = as.numeric(dplyr::first(group_effect_mode)),
+                OHD_effect_lCI = as.numeric(dplyr::first(group_effect_lCI)),
+                OHD_effect_uCI = as.numeric(dplyr::first(group_effect_uCI)),
+                min_personal_OHD = min(as.numeric(personal_effect)),
+                min_personal_mode_OHD = min(as.numeric(personal_effect_mode)),
+                min_personal_OHD_lCI = as.numeric(personal_effect_lCI[which.min(as.numeric(personal_effect))]),
+                min_personal_OHD_uCI = as.numeric(personal_effect_uCI[which.min(as.numeric(personal_effect))]),
+                max_personal_OHD = max(as.numeric(personal_effect)),
+                max_personal_mode_OHD = max(as.numeric(personal_effect_mode)),
+                max_personal_OHD_lCI = as.numeric(personal_effect_lCI[which.max(as.numeric(personal_effect))]),
+                max_personal_OHD_uCI = as.numeric(personal_effect_uCI[which.max(as.numeric(personal_effect))])
+  )
+
+PD_summary <- effect_summary %>% 
+  arrange(effect) %>%
+  select(effect, 
+         treatment_group,
+         group_effect,
+         group_effect_mode,
+         group_effect_lCI,
+         group_effect_uCI,
+         personal_effect,
+         personal_effect_mode,
+         personal_effect_lCI,
+         personal_effect_uCI) %>%
+  filter(treatment_group == "PD") %>%
+  group_by(effect) %>%
+  dplyr::summarise(
+                PD_effect = as.numeric(dplyr::first(group_effect)),
+                PD_effect_mode = as.numeric(dplyr::first(group_effect_mode)),
+                PD_effect_lCI = as.numeric(dplyr::first(group_effect_lCI)),
+                PD_effect_uCI = as.numeric(dplyr::first(group_effect_uCI)),
+                min_personal_PD = min(as.numeric(personal_effect)),
+                min_personal_mode_PD = min(as.numeric(personal_effect_mode)),
+                min_personal_PD_lCI = as.numeric(personal_effect_lCI[which.min(as.numeric(personal_effect))]),
+                min_personal_PD_uCI = as.numeric(personal_effect_uCI[which.min(as.numeric(personal_effect))]),
+                max_personal_PD = max(as.numeric(personal_effect)),
+                max_personal_mode_PD = max(as.numeric(personal_effect_mode)),
+                max_personal_PD_lCI = as.numeric(personal_effect_lCI[which.max(as.numeric(personal_effect))]),
+                max_personal_PD_uCI = as.numeric(personal_effect_uCI[which.max(as.numeric(personal_effect))])
+  )
+
+# lookup dataframe for pretty effect names
+all_effects <- expand.grid(predictor = assumedpredictors_fat_epros$Name, target = assumedtargets$Name)
+all_descs <- expand.grid(predictor = assumedpredictors_fat_epros$Description, target = assumedtargets$Description)
+effect_desc.df <- data.frame(effect <- paste0(all_effects$predictor,"_",all_effects$target), row.names = NULL)
+effect_desc.df$desc <- paste0(effect <- paste0(all_descs$predictor," -> ",all_descs$target))
+effect_desc.df$nutrient <- all_descs$predictor
+effect_desc.df$concentration <- all_descs$target
+colnames(effect_desc.df) <- c("effect", "effect_description", "nutrient", "concentration")
+
+full_summary <- general_summary %>% 
+  inner_join(KHD_summary, by = "effect") %>%
+  inner_join(OHD_summary, by = "effect") %>%
+  inner_join(PD_summary, by = "effect") %>%
+  inner_join(effect_desc.df, by = "effect")
+
+# new df for table
+two_level_effects_table.df <- data.frame(effect <- full_summary$effect, row.names = NULL)
+
+# escape %-sign
+#two_level_effects_table.df$effect_description <- gsub("%"," ",full_summary$effect_description)
+two_level_effects_table.df$effect_description <- full_summary$effect_description
+
+two_level_effects_table.df$nutrient <- full_summary$nutrient
+two_level_effects_table.df$concentration <- full_summary$concentration
+
+two_level_effects_table.df$general_effect <- linebreak(paste0(format(round(full_summary$general_effect,2), nsmall=2),"\n$\\left[",format(round(full_summary$general_effect_lCI,2), nsmall=2),"; ",format(round(full_summary$general_effect_uCI,2), nsmall=2),"\\right]$"), align = "c")
+
+# - adds mode
+#two_level_effects_table.df$general_effect <- linebreak(paste0(format(round(full_summary$general_effect,2), nsmall=2),", ",format(round(full_summary$general_effect_mode,2), nsmall=2), "\n$\\left[",format(round(full_summary$general_effect_lCI,2), nsmall=2),"; ",format(round(full_summary$general_effect_uCI,2), nsmall=2),"\\right]$"), align = "c")
+
+two_level_effects_table.df$sigma_g <- linebreak(paste0(format(round(full_summary$sigma_g,2), nsmall = 2),"\n$\\left[",format(round(full_summary$sigma_g_lCI,2), nsmall = 2),"; ",format(round(full_summary$sigma_g_uCI,2), nsmall = 2),"\\right]$"), align = "c")
+two_level_effects_table.df$sigma_b <- linebreak(paste0(format(round(full_summary$sigma_b,2), nsmall = 2),"\n$\\left[",format(round(full_summary$sigma_b_lCI,2), nsmall = 2),"; ",format(round(full_summary$sigma_b_uCI,2), nsmall = 2),"\\right]$"), align = "c")
+
+two_level_effects_table.df$KHD <- linebreak(paste0(format(round(full_summary$KHD_effect,2), nsmall = 2),"\n$\\left[",format(round(full_summary$KHD_effect_lCI,2), nsmall = 2),"; ",format(round(full_summary$KHD_effect_uCI,2), nsmall = 2),"\\right]$"), align = "c")
+two_level_effects_table.df$KHD_min <- linebreak(paste0(format(round(full_summary$min_personal_KHD,2), nsmall = 2),"\n$\\left[",format(round(full_summary$min_personal_KHD_lCI,2), nsmall = 2),"; ",format(round(full_summary$min_personal_KHD_uCI,2), nsmall = 2),"\\right]$"), align = "c")
+two_level_effects_table.df$KHD_max <- linebreak(paste0(format(round(full_summary$max_personal_KHD,2), nsmall = 2),"\n$\\left[",format(round(full_summary$max_personal_KHD_lCI,2), nsmall = 2),"; ",format(round(full_summary$max_personal_KHD_uCI,2), nsmall = 2),"\\right]$"), align = "c")
+
+two_level_effects_table.df$OHD <- linebreak(paste0(format(round(full_summary$OHD_effect,2), nsmall = 2),"\n$\\left[",format(round(full_summary$OHD_effect_lCI,2), nsmall = 2),"; ",format(round(full_summary$OHD_effect_uCI,2), nsmall = 2),"\\right]$"), align = "c")
+two_level_effects_table.df$OHD_min <- linebreak(paste0(format(round(full_summary$min_personal_OHD,2), nsmall = 2),"\n$\\left[",format(round(full_summary$min_personal_OHD_lCI,2), nsmall = 2),"; ",format(round(full_summary$min_personal_OHD_uCI,2), nsmall = 2),"\\right]$"), align = "c")
+two_level_effects_table.df$OHD_max <- linebreak(paste0(format(round(full_summary$max_personal_OHD,2), nsmall = 2),"\n$\\left[",format(round(full_summary$max_personal_OHD_lCI,2), nsmall = 2),"; ",format(round(full_summary$max_personal_OHD_uCI,2), nsmall = 2),"\\right]$"), align = "c")
+
+two_level_effects_table.df$PD <- linebreak(paste0(format(round(full_summary$PD_effect,2), nsmall = 2),"\n$\\left[",format(round(full_summary$PD_effect_lCI,2), nsmall = 2),"; ",format(round(full_summary$PD_effect_uCI,2), nsmall = 2),"\\right]$"), align = "c")
+two_level_effects_table.df$PD_min <- linebreak(paste0(format(round(full_summary$min_personal_PD,2), nsmall = 2),"\n$\\left[",format(round(full_summary$min_personal_PD_lCI,2), nsmall = 2),"; ",format(round(full_summary$min_personal_PD_uCI,2), nsmall = 2),"\\right]$"), align = "c")
+two_level_effects_table.df$PD_max <- linebreak(paste0(format(round(full_summary$max_personal_PD,2), nsmall = 2),"\n$\\left[",format(round(full_summary$max_personal_PD_lCI,2), nsmall = 2),"; ",format(round(full_summary$max_personal_PD_uCI,2), nsmall = 2),"\\right]$"), align = "c")
+
+# for sorting
+two_level_effects_table.df$sg <- full_summary$sigma_g
+two_level_effects_table.df$sb <- full_summary$sigma_b
+two_level_effects_table.df$abs_general <- abs(full_summary$general_effect)
+
+# Sort table by general effect level and variation between treatments
+
+two_level_effects_table.df <- two_level_effects_table.df[order(-two_level_effects_table.df$sg),] 
+
+```
+
+```{r pot_pho_effects_only, cache=FALSE, echo=FALSE, eval=FALSE}
+
+# This table is used in the article
+
+pot_pho_effects.df <- two_level_effects_table.df %>%
+  filter(nutrient == "Potassium" | nutrient == "Phosphorous") %>%
+  arrange(nutrient)
+
+kable(pot_pho_effects.df[c(3:4,5,8:16)], "latex", escape = F, booktabs = T, row.names = FALSE, digits = 2,align="llccccccccccc",
+  caption = "Effects of potassium and phosphorous between different dialysis treatments and between patients within the same treatment.",
+  col.names = c("Nutrient", "Conc.", "General effect", "avg", "min", "max", "avg", "min", "max", "avg", "min", "max")) %>%
+  column_spec(1, width = "7em") %>%
+  column_spec(2, width = "4em") %>%
+  column_spec(4, bold=TRUE) %>%
+  column_spec(7, bold=TRUE) %>%
+  column_spec(10, bold=TRUE) %>%
+  add_header_above(c(" " = 3, "Home hemodialysis" = 3, "Hospital hemodialysis" = 3, "Peritoneal dialysis" = 3), escape = F) %>%
+ kable_styling(latex_options="scale_down") %>%  
+  kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) %>%
+  row_spec(0,bold=TRUE) %>%
+  save_kable(file = "tables/pot_and_pho_effects.pdf", keep_tex = TRUE)
+```
+
+Following tables include all the estimated nutrition effects in general, dialysis treatment and personal levels.  
+```{r full_effects_table, cache=FALSE, echo=FALSE}
+# kable(two_level_effects_table.df[2:14], "latex", booktabs = T, row.names = FALSE, digits = 2,align="lrrrrrrrrrrrr",
+#   caption = "Variation of nutrition effects between different dialysis treatments and between patients within the same treatment.",
+#   col.names = c("Effect", "General effect", "between treatments", "within treatments", "avg", "min", "max", "avg", "min", "max", "avg", "min", "max")) %>%
+#   add_header_above(c(" " = 2, "Variation" = 2, "KHD" = 3, "OHD" = 3, "PD" = 3), escape = F) %>%
+#  kable_styling(latex_options="scale_down") %>%  
+#   kable_styling(latex_options = c("basic", "condensed"), full_width = TRUE) %>%
+#   row_spec(0,bold=TRUE) %>%
+#   save_kable(file = "tables/variation_of_nutrition_effects2.pdf", keep_tex = TRUE)
+
+# variations removed 
+#  caption = "",
+
+kabletable1 <- two_level_effects_table.df[1:32,c(3:4,5,8:16)]
+kabletable1$nutrient <- gsub("%", "\\\\%", kabletable1$nutrient)
+
+table1 <- kable(kabletable1, "latex", escape = F, booktabs = T, row.names = FALSE, digits = 2,align="llccccccccccc",
+  col.names = c("Nutrient", "Conc.", "General effect", "avg", "min", "max", "avg", "min", "max", "avg", "min", "max")) %>%
+  column_spec(1, width = "7em") %>%
+  column_spec(2, width = "4em") %>%
+  column_spec(4, bold=TRUE) %>%
+  column_spec(7, bold=TRUE) %>%
+  column_spec(10, bold=TRUE) %>%
+  add_header_above(c(" " = 3, "Home hemodialysis" = 3, "Hospital hemodialysis" = 3, "Peritoneal dialysis" = 3), escape = F) %>%
+  row_spec(0,bold=TRUE) %>%
+  kable_styling(latex_options = "scale_down") %>%
+  kable_styling(latex_options = c("basic", "condensed"))
+
+table1 %>%  save_kable(file = "tables/variation_of_nutrition_effects1.pdf", keep_tex = TRUE)
+
+kabletable2 <- two_level_effects_table.df[33:66,c(3:4,5,8:16)]
+kabletable2$nutrient <- gsub("%", "\\\\%", kabletable2$nutrient)
+
+table2 <- kable(kabletable2, "latex", escape = F, booktabs = T, row.names = FALSE, digits = 2,align="llccccccccccc",
+  col.names = c("Nutrient", "Conc.", "General effect", "avg", "min", "max", "avg", "min", "max", "avg", "min", "max")) %>%
+  column_spec(1, width = "7em") %>%
+  column_spec(2, width = "4em") %>%
+  column_spec(4, bold=TRUE) %>%
+  column_spec(7, bold=TRUE) %>%
+  column_spec(10, bold=TRUE) %>%
+  add_header_above(c(" " = 3, "Home hemodialysis" = 3, "Hospital hemodialysis" = 3, "Peritoneal dialysis" = 3), escape = F) %>%
+  row_spec(0,bold=TRUE) %>%
+  kable_styling(latex_options = "scale_down") %>%
+  kable_styling(latex_options = c("basic", "condensed")) 
+
+table2 %>% save_kable(file = "tables/variation_of_nutrition_effects2.pdf", keep_tex = TRUE)
+
+```
+Supplementary Table S4: Nutrition effect magnitudes from nutrients and other modeled features $(j = 1,\dots,22)$ to blood concentrations $(i = 1,\dots,3)$ for analyzed patients $(p = 1,\dots,37)$ in all three additive levels of the model. General effects ($\hat{\beta}_{ij}$) are shown to vary between patients in home hemodialysis, hospital hemodialysis, and peritoneal dialysis. First column of each dialysis type (avg) shows typical effect of the treatment ($\hat{\beta}_{ij} + \hat{g}_{ijk}, k = 1,\dots,3$) that can further vary personally. Minimum and maximum of these personal effects are shown within each treatment ($\hat{\beta}_{ij} + \hat{g}_{ijk} + \hat{b}_{ijp}$). The table is sorted in decreasing order of between-treatment variation ($\hat{\sigma}_g$) and all the estimates include their 90\%-credible intervals.
+```{r full_effects_table2, eval=TRUE, include=TRUE, fig.align="center", out.height="\\textheight", out.width="100%", echo=FALSE}
+knitr::include_graphics("tables/variation_of_nutrition_effects1.pdf")
+```
+
+Supplementary Table S4 (continued)
+```{r full_effects_table3, eval=TRUE, include=TRUE, fig.align="center", out.height="\\textheight", out.width="100%", echo=FALSE}
+knitr::include_graphics("tables/variation_of_nutrition_effects2.pdf")
+```
+
+```{r top_effect_summary,echo=FALSE, cache=FALSE}
+library(dplyr)
+
+effect_summary <- readRDS("patient_summary/two_level_effect_summary.rds")
+
+# Most varying effect between patients regardless the treatment
+
+effect_summary$sigma_b <- as.numeric(effect_summary$sigma_b)
+effect_summary$personal_effect <- as.numeric(effect_summary$personal_effect)
+
+top_effect_summary <- effect_summary %>%
+  group_by(effect) %>% 
+  mutate(personal_max = personal_effect[which.max(personal_effect)]) %>% 
+  mutate(personal_min = personal_effect[which.min(personal_effect)]) %>% 
+  mutate(personal_variation = personal_max - personal_min) %>% 
+  ungroup() %>%
+  arrange(desc(personal_variation)) %>%
+  select(effect, personal_min, personal_max,personal_variation) %>%
+  distinct()
+
+# - pretty name lookup
+all_effects <- expand.grid(predictor = assumedpredictors_fat_epros$Name, target = assumedtargets$Name)
+all_descs <- expand.grid(predictor = assumedpredictors_fat_epros$Description, target = assumedtargets$Description)
+effect_desc.df <- data.frame(effect <- paste0(all_effects$predictor,"_",all_effects$target), row.names = NULL)
+effect_desc.df$desc <- paste0(effect <- paste0(all_descs$predictor," -> ",all_descs$target))
+effect_desc.df$nutrient <- all_descs$predictor
+effect_desc.df$concentration <- all_descs$target
+colnames(effect_desc.df) <- c("effect", "effect_description", "nutrient", "concentration")
+
+top_effect_summary <- top_effect_summary %>% inner_join(effect_desc.df, by = "effect")
+
+```
+
+\newpage
+Supplementary Table S5: Table shows 20 effects that have highest variation between patients by comparing minimum and maximum of expected effect strength.
+```{r top_effect_summary_table,echo=FALSE, cache=FALSE}
+kable(top_effect_summary[1:20, c(5,2,3)], "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect", "Min", "Max")) %>%
+    kable_styling(latex_options = "HOLD_position") %>%
+    kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) %>%
+    add_header_above(c(" " = 1, "Expected personal effect strength" = 2), escape = F) %>%
+    row_spec(0,bold=TRUE)
+```
+
+```{r recommendation_overview_simulation, eval=FALSE,echo=FALSE, message=FALSE}
+source("mebn/v2/MEBNv2.r")
+library(igraph)
+library(gridExtra)
+library(dplyr)
+  
+# Query parameters
+simulation <- "X50_B50_A50_I50"
+
+# - data parameters
+graph_dir <- "graphs/mv3_cross_two_levels/"
+
+# - evidence / query parameters
+#pk_recommendations <- c(3.4,4.7)
+#fppi_recommendations <- c(0.4,1.8)
+#palb_recommendations <- c(34,48)
+#recommeded_concentrations <- t(array(c(pk_recommendations, fppi_recommendations, palb_recommendations), dim = c(2,3)))
+
+potassium_org_mean <- mean(dialysis$kalium) # 2755
+potassium_org_sd <- sd(dialysis$kalium) # 949
+  
+phosphorous_org_mean <- mean(dialysis$fosfori) # 2755
+phosphorous_org_sd <- sd(dialysis$fosfori) # 949
+
+datadesc <- datadesc_fat_epros
+uniform_proposaldist_limits <- c(((datadesc[datadesc$Name=="kalium",]$Lowerbound - potassium_org_mean) / potassium_org_sd),
+                                ((datadesc[datadesc$Name=="kalium",]$Upperbound - potassium_org_mean) / potassium_org_sd),
+                                ((datadesc[datadesc$Name=="fosfori",]$Lowerbound - phosphorous_org_mean) / phosphorous_org_sd),
+                                ((datadesc[datadesc$Name=="fosfori",]$Upperbound - phosphorous_org_mean) / phosphorous_org_sd))
+
+# - collect personal statistics in this data frame
+patient_summary <- data.frame(matrix(ncol = 25, nrow = 0), row.names = NULL)
+
+colnames(patient_summary) <- c("person_id", "subject_code", "treatment", "accepted", "max_conc_prob", "max_pk_prob", "max_fppi_prob", "max_palb_prob", "potassium_low", "phosphorous_low", "potassium_high", "phosphorous_high","pk_min","pk_max", "fppi_min", "fppi_max", "palb_min", "palb_max", "estimated_pk","true_pk","estimated_fppi","true_fppi","estimated_palb","true_palb","recommandation_probability")
+
+for (person_id in 1:37) {
+  
+  print(paste0("Simulating patient ", person_id))
+
+  subject_code <- levels(dialysis$potilas)[person_id]
+  treatment <- unique(dialysis[dialysis$potilas == subject_code,]$hoitomuoto)
+  
+  # Normal ranges of concentration are personalized
+  personal_info <- head(dialysis[dialysis$potilas == subject_code,],1)
+  recommeded_concentrations <- mebn.get_personal_target_guidelines(personal_info, patient_in_dialysis = TRUE)
+  
+  print(paste0("personal lower limits: ", as.vector(recommeded_concentrations$lower_limits)))
+  print(paste0("personal upper limits: ", as.vector(recommeded_concentrations$upper_limits)))
+  
+  personal_model_dir <- paste0(graph_dir,person_id)
+  personal_graph <- read.graph(paste0(personal_model_dir, "/personal_graph.graphml"), "graphml")
+  
+  # Sample diet proposals and matching concentration predictions
+  
+  # - repeating personal behaviour for model checking is moved earlier in this notebook
+  personal_repeats <- cbind(0,0,0,0,0,0)
+  colnames(personal_repeats) <- c("estimated_pk","true_pk","estimated_fppi","true_fppi","estimated_palb","true_palb")
+  
+  #source("mebn/v2/MEBNv2.r")
+
+  intake_model <- mebn.Query(reaction_graph = personal_graph,
+                           graph_dir = personal_model_dir,
+                           queried_nodes = c("kalium","fosfori"),
+                           query = recommeded_concentrations,
+                           proposal_limits = c(((0 - potassium_org_mean) / potassium_org_sd),
+                                             ((5800 - potassium_org_mean) / potassium_org_sd),
+                                             ((0 - phosphorous_org_mean) / phosphorous_org_sd),
+                                             ((2550 - phosphorous_org_mean) / phosphorous_org_sd)),
+                           stan_model_file = "diet/multivariate_intake_recommendation.stan",
+                           conc_lower_limits = as.vector(recommeded_concentrations$lower_limits),
+                           conc_upper_limits = as.vector(recommeded_concentrations$upper_limits),
+                           beta_point_est = "mean",
+                           param_point_est = "mean",
+                           X_sd_coef = 0, # coef = 0 forces to use the point estimate
+                           X_point_est = "mean",
+                           posterior_samples = 1000,
+                           repeat_only = 0,
+                           condition_in_repeat = 0)
+  
+  # Extract all the samples and correlate concentrations and intake with proposal ids
+  
+  result <- rstan::extract(intake_model)
+
+  pk <- result$concentration[,,1]
+  fppi <- result$concentration[,,2]
+  palb <- result$concentration[,,3]
+
+  proposals <- 1:dim(pk)[1]
+  proposal_samples <- 1:dim(pk)[2]
+
+  concs.df <- data.frame(proposal=rep(proposals, each = length(proposal_samples)), pk=as.vector(t(pk)),fppi=as.vector(t(fppi)),palb=as.vector(t(palb)))
+  
+  # Get the original scale levels of potassium and potassium from each diet proposal
+  #pot <- result$Q[,1] * potassium_org_sd + potassium_org_mean
+  #pho <- result$Q[,2] * phosphorous_org_sd + phosphorous_org_mean
+
+  pot <- result$Q_pred[,1] * potassium_org_sd + potassium_org_mean
+  pho <- result$Q_pred[,2] * phosphorous_org_sd + phosphorous_org_mean
+  
+  intake_proposals.df <- data.frame(proposal=proposals, pot=as.vector(pot),pho=as.vector(pho))
+  
+  #  Calculate probability of each proposal being within the recommended concentration limits.
+  #  The calculation is done based on empirical cumulative distribution function (ecdf) for each concentration distribution. 
+  
+  pk_recommendations <- c(recommeded_concentrations$lower_limits[1], recommeded_concentrations$upper_limits[1])
+  fppi_recommendations <- c(recommeded_concentrations$lower_limits[2], recommeded_concentrations$upper_limits[2])
+  palb_recommendations <- c(recommeded_concentrations$lower_limits[3], recommeded_concentrations$upper_limits[3])
+
+  proposal_probs.df <- concs.df %>%
+  select(proposal,pk,fppi,palb) %>%
+  group_by(proposal) %>%
+  summarise(
+    pk_prob = (ecdf(pk)(pk_recommendations[2]) - ecdf(pk)(pk_recommendations[1])),
+    fppi_prob = (ecdf(fppi)(fppi_recommendations[2]) - ecdf(fppi)(fppi_recommendations[1])),
+    palb_prob = (ecdf(palb)(palb_recommendations[2]) - ecdf(palb)(palb_recommendations[1])),
+    lowest_conc_prob = min(pk_prob, fppi_prob, palb_prob),
+    iid_prob = pk_prob * fppi_prob * palb_prob,
+  )
+  
+  # Filter all accepted diet proposals with a fixed probability limit. 
+  acceptance_probability <- 0.50
+  
+  #   This is denoted with constant 'c' in Algorithm 1.
+  #recommandation_probability <- 0.90
+
+  recommandation_probability_levels <- c(0.90, 0.80)
+  
+  accepted <- 0
+
+  # conc_limits <- concs.df %>%
+  #   inner_join(proposal_probs.df, by="proposal") %>%
+  #   select(pk,fppi,palb) %>%
+  #   summarise(
+  #             pk_low = min(pk), 
+  #             fppi_low = min(fppi), 
+  #             palb_low = min(palb),
+  #             pk_high = max(pk), 
+  #             fppi_high = max(fppi), 
+  #             palb_high = max(palb)
+  #   )
+
+  # Find the lowest and highest reachable concentrations  
+  # TODO: filter by probability (Above)?
+  
+  conc_limits <- concs.df %>%
+  select(pk,fppi,palb) %>%
+  summarise(
+            pk_low = min(pk), 
+            fppi_low = min(fppi), 
+            palb_low = min(palb),
+            pk_high = max(pk), 
+            fppi_high = max(fppi), 
+            palb_high = max(palb)
+  )
+
+  # This requires all concentrations from one proposal to be accepted
+  # distribution of accepted proposals    
+
+  accepted_proposals.df <- proposal_probs.df %>%
+    filter(lowest_conc_prob >= acceptance_probability) %>%
+    as.data.frame()
+
+  print(paste0("Proposals accepted ", nrow(accepted_proposals.df)))
+  
+  # Join intake and resulting concentrations
+  accepted_intake.df <- accepted_proposals.df %>% inner_join(intake_proposals.df, by="proposal")
+
+  # Highest probability that can be reached  
+  max_conc_prob <- max(proposal_probs.df$lowest_conc_prob)
+
+  # Search for the widest nutrient intake range within the accepted proposals  
+
+  accepted <- 0
+  min_pot <- -1
+  min_pho <- -1 
+  max_pot <- -1
+  max_pho <- -1
+
+  accepted_recommandation_probability <- 0
+
+  # - Do we have any accepted proposals?
+  if (nrow(accepted_intake.df) > 0)
+  {
+    saveRDS(accepted_intake.df, paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/accepted_intake_",person_id,".rds"))
+
+    # Loop possible recommandation_probability_levels and fallback to lower level if higher returns empty
+    
+    for (recommandation_probability in recommandation_probability_levels)
+    {
+      # Filter recommendation distributions
+      recommendation_intake.df <- accepted_intake.df %>%
+        filter(lowest_conc_prob >= recommandation_probability) %>%
+        as.data.frame()
+      
+      print(paste0("Proposals narrowed to ", nrow(recommendation_intake.df)))
+  
+     if (nrow(recommendation_intake.df) > 0)
+     {
+        accepted <- 1
+        accepted_recommandation_probability <- recommandation_probability
+  
+        # Pick 2.5% and 97.5% quantiles of recommendation posteriors as recommendation limits   
+        pot_quantiles <- quantile(recommendation_intake.df$pot, probs = c(0.025,0.975))
+        pho_quantiles <- quantile(recommendation_intake.df$pho, probs = c(0.025,0.975))
+    
+        # And then closest sampled proposals matching those limits
+        min_pot_row <- recommendation_intake.df[which.min(abs(recommendation_intake.df$pot-pot_quantiles[1])),]
+        max_pot_row <- recommendation_intake.df[which.min(abs(recommendation_intake.df$pot-pot_quantiles[2])),]
+        min_pho_row <- recommendation_intake.df[which.min(abs(recommendation_intake.df$pho-pho_quantiles[1])),]
+        max_pho_row <- recommendation_intake.df[which.min(abs(recommendation_intake.df$pho-pho_quantiles[2])),]
+    
+        # - and nutrient levels
+        min_pot <- as.numeric(min_pot_row$pot)
+        max_pot <- as.numeric(max_pot_row$pot)
+        min_pho <- as.numeric(min_pho_row$pho)
+        max_pho <- as.numeric(max_pho_row$pho)
+        
+        # - concentrations matching those proposals    
+        concs_minmax.df <- concs.df[concs.df$proposal %in% c(min_pot_row$proposal,max_pot_row$proposal,min_pho_row$proposal,max_pho_row$proposal),]
+        
+        saveRDS(concs_minmax.df, paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/concs_minmax_",person_id,".rds"))
+        
+        # Break out from loop with this probability
+        break
+     } 
+      else
+     {
+        accepted <- 0
+        min_pot <- -1
+        min_pho <- -1 
+        max_pot <- -1
+        max_pho <- -1
+     }
+    }
+  }
+
+  # Here the min and max concentrations match the nutrient recommendations
+  personal_intake <- cbind(person_id,
+                                   subject_code,
+                                   treatment,
+                                   accepted,
+                                   max_conc_prob,
+                                   max_pk_prob = max(proposal_probs.df$pk_prob),
+                                   max_fppi_prob = max(proposal_probs.df$fppi_prob),
+                                   max_palb_prob = max(proposal_probs.df$palb_prob),
+                                   min_pot, 
+                                   min_pho, 
+                                   max_pot, 
+                                   max_pho,
+                                   accepted_recommandation_probability)
+
+  personal_recommendation <- cbind(personal_intake, conc_limits, personal_repeats)
+  patient_summary <- rbind(patient_summary,personal_recommendation)
+
+  saveRDS(personal_recommendation, paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds"))
+} 
+
+saveRDS(patient_summary, paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/recommendation_summary_posterior_params.rds"))
+
+```
+
+```{r personal_effect_summary,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
+library(igraph)
+graph_dir <- "graphs/mv3_cross_two_levels/"
+
+personal_effect_summary <- data.frame(matrix(ncol = 23, nrow = 0), row.names = NULL)
+
+for (person_id in 1:37) {
+  
+  personal_model_dir <- paste0(graph_dir,person_id)
+  personal_graph <- read.graph(paste0(personal_model_dir, "/personal_graph.graphml"), "graphml")
+
+  nodes <- V(personal_graph)
+  personal_effects <- c(person_id,
+                      nodes["kalium"]$value_mean,
+                      nodes["fosfori"]$value_mean,
+                      nodes["pk"]$value_mean,
+                      nodes["fppi"]$value_mean,
+                      nodes["palb"]$value_mean,
+                      nodes["personal_kalium_pk"]$value,
+                      nodes["personal_kalium_pk"]$value_lCI,
+                      nodes["personal_kalium_pk"]$value_uCI,
+                      nodes["personal_kalium_fppi"]$value,
+                      nodes["personal_kalium_fppi"]$value_lCI,
+                      nodes["personal_kalium_fppi"]$value_uCI,
+                      nodes["personal_kalium_palb"]$value,
+                      nodes["personal_kalium_palb"]$value_lCI,
+                      nodes["personal_kalium_palb"]$value_uCI,
+                      nodes["personal_fosfori_pk"]$value,
+                      nodes["personal_fosfori_pk"]$value_lCI,
+                      nodes["personal_fosfori_pk"]$value_uCI,
+                      nodes["personal_fosfori_fppi"]$value,
+                      nodes["personal_fosfori_fppi"]$value_lCI,
+                      nodes["personal_fosfori_fppi"]$value_uCI,
+                      nodes["personal_fosfori_palb"]$value,
+                      nodes["personal_fosfori_palb"]$value_lCI,
+                      nodes["personal_fosfori_palb"]$value_uCI)
+  
+    personal_effect_summary <- rbind(personal_effect_summary,personal_effects)
+}
+
+colnames(personal_effect_summary) <- c("person_id","kalium","fosfori","pk","fppi","palb","personal_kalium_pk","personal_kalium_pk_lCI","personal_kalium_pk_uCI","personal_kalium_fppi","personal_kalium_fppi_lCI","personal_kalium_fppi_uCI","personal_kalium_palb","personal_kalium_palb_lCI","personal_kalium_palb_uCI","personal_fosfori_pk","personal_fosfori_pk_lCI","personal_fosfori_pk_uCI","personal_fosfori_fppi","personal_fosfori_fppi_lCI","personal_fosfori_fppi_uCI","personal_fosfori_palb","personal_fosfori_palb_lCI","personal_fosfori_palb_uCI")
+
+#personal_effect_summary
+```
+
+
+```{r concentration_highs_and_lows, echo=FALSE,warning=FALSE,message=FALSE}
+library(dplyr)
+
+simulation <- "X50_B50_A50_I50"
+#simulation <- "X50_B50_A50_I50_fppi2"
+#simulation <- "X5_B5_A50_I50"
+#simulation <- "X95_B95_A50_I50"
+
+recom_summary <- readRDS(paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/recommendation_summary_posterior_params.rds"))
+
+# Calculate concentration level that matches the recommendation
+
+patient_summary <- data.frame(matrix(ncol = 27, nrow = 0), row.names = NULL)
+
+# colnames(patient_summary) <- c("person_id", "subject_code", "treatment", "accepted", "max_conc_prob", "potassium_low", "phosphorous_low", "potassium_high", "phosphorous_high","pk_min","pk_max", "fppi_min", "fppi_max", "palb_min", "palb_max", "estimated_pk","true_pk","estimated_fppi","true_fppi","estimated_palb","true_palb","pk_low_median","pk_high_median","fppi_low_median","fppi_high_median","palb_low_median","palb_high_median")
+
+for (person_id in 1:37) {
+  
+  #conf <- 0.90
+  conf <- as.numeric(recom_summary[recom_summary$person_id == person_id,]$accepted_recommandation_probability)
+  low_conf <- 1 - conf
+  
+  personal_recommendation <- readRDS(paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds"))
+  
+  concs_file <- paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/concs_minmax_",person_id,".rds")
+  
+  if (file.exists(concs_file))
+  {
+    personal_concs <- readRDS(concs_file)
+    quantile_limits <- c(low_conf,conf)	
+
+    conc_quants <- personal_concs %>%
+      select(proposal,pk,fppi,palb) %>%
+      group_by(proposal) %>%
+      summarise(quant = quantile_limits,
+            pk = quantile(pk, quantile_limits), 
+            fppi = quantile(fppi, quantile_limits), 
+            palb = quantile(palb, quantile_limits),
+            .groups = "keep")
+      
+    pk_low_rec <- min(conc_quants[conc_quants$quant == low_conf,]$pk)
+    pk_high_rec <- max(conc_quants[conc_quants$quant == conf,]$pk)
+
+    fppi_low_rec <- min(conc_quants[conc_quants$quant == low_conf,]$fppi)
+    fppi_high_rec <- max(conc_quants[conc_quants$quant == conf,]$fppi)
+
+    palb_low_rec <- min(conc_quants[conc_quants$quant == low_conf,]$palb)
+    palb_high_rec <- max(conc_quants[conc_quants$quant == conf,]$palb)
+
+    conc_recs <- data.frame(pk_low_rec,pk_high_rec,fppi_low_rec,fppi_high_rec,palb_low_rec,palb_high_rec)
+    colnames(conc_recs) <- c("pk_low_rec","pk_high_rec","fppi_low_rec","fppi_high_rec","palb_low_rec","palb_high_rec")
+  }
+  else
+  {
+    conc_recs <- data.frame(0,0,0,0,0,0)
+    colnames(conc_recs) <- c("pk_low_rec","pk_high_rec","fppi_low_rec","fppi_high_rec","palb_low_rec","palb_high_rec")
+  }
+  
+  patient_summary <- rbind(patient_summary,c(personal_recommendation,conc_recs))
+}
+
+```
+
+```{r muq0_summary, echo=FALSE}
+library(igraph)
+graph_dir <- "graphs/mv3_cross_two_levels/"
+
+muq0_summary <- data.frame(matrix(ncol = 3, nrow = 0), row.names = NULL)
+
+for (person_id in 1:37) {
+  
+  personal_model_dir <- paste0(graph_dir,person_id)
+  personal_graph <- read.graph(paste0(personal_model_dir, "/personal_graph.graphml"), "graphml")
+  
+  X <- mebn.GetEvidence(personal_graph, c("kalium", "fosfori"), point_est = "mean")
+  Y_int <- mebn.GetIntercept(personal_graph, personal_model_dir, point_est = "mean")
+  Beta <- mebn.GetBeta(personal_graph, personal_model_dir, point_est = "mean")
+  
+  pk_mu_q0 <- Y_int[1] + X$evidence[-X$cond_index,1] %*% Beta[1, -X$cond_index]
+  fppi_mu_q0 <- Y_int[2] + X$evidence[-X$cond_index,1] %*% Beta[2, -X$cond_index]
+  palb_mu_q0 <- Y_int[3] + X$evidence[-X$cond_index,1] %*% Beta[3, -X$cond_index]
+  
+  if (pk_mu_q0 < 0) pk_mu_q0 <- 0
+  if (fppi_mu_q0 < 0) fppi_mu_q0 <- 0
+  if (palb_mu_q0 < 0) palb_mu_q0 <- 0
+  
+  muq0_summary <- rbind(muq0_summary, c(person_id, pk_mu_q0, fppi_mu_q0, palb_mu_q0))
+}
+
+colnames(muq0_summary) <- c("person_id", "pk_mu_q0", "fppi_mu_q0", "palb_mu_q0")
+muq0_summary <- round(muq0_summary, 2)
+muq0_summary$person_id <- as.character(muq0_summary$person_id)
+```
+
+```{r personal_concentration_targets, echo=FALSE}
+
+personal_targets <- data.frame(matrix(ncol = 6, nrow = 0), row.names = NULL)
+
+for (person_id in 1:37) {
+  
+  subject_code <- levels(dialysis$potilas)[person_id]
+
+  personal_info <- head(dialysis[dialysis$potilas == subject_code,],1)
+  recommeded_concentrations <- mebn.get_personal_target_guidelines(personal_info, patient_in_dialysis = TRUE)
+  
+  lower_limits <- as.vector(recommeded_concentrations$lower_limits)
+  upper_limits <- as.vector(recommeded_concentrations$upper_limits)
+  
+  personal_targets <- rbind(personal_targets, c(person_id, lower_limits, upper_limits))
+}
+
+colnames(personal_targets) <- c("person_id", "pk_lower_limit", "fppi_lower_limit", "palb_lower_limit", "pk_upper_limit", "fppi_upper_limit", "palb_upper_limit")
+```
+
+# Overview of personal recommendations 
+```{r reasoning_plot_ridges, fig.height=8.5, fig.width=8, cache=FALSE,echo=FALSE, message=FALSE, warning=FALSE,fig.cap="The figure shows in two left-most panels personal recommendations of potassium and phosphorous intake ($\\hat{Q}^{min}-\\hat{Q}^{max}$) with predictive distributions of $\\hat{Q}$ illustrated in the background. Each row shows a numeric label of the patient and the type of patient's dialysis treatment (HD = hospital hemodialysis, HHD = home hemodialysis, PD = peritoneal dialysis). Personal recommendations are given for those patients whose resulting plasma concentration levels could be predicted in either over 90\\% probability. Three right-most panels show the estimated concentrations that match the recommended intake. In these panels, grey bars indicate the estimated concentration without the effect of potassium and phosphorous intake, $\\mu_{q0}$. Blue bars indicate the range of concentration that is resulted from modifying phosphorous and potassium intake. It is required that these simulated concentrations stay within the personal target ranges denoted with vertical black lines. The dark blue bar indicates satisfying this requirement in $P^{max} > 90\\%$ confidence and $P^{max} > 80\\%$ confidence would be indicated with light blue, but there aren't any in the results. The best exact probabilities $P^{max}_m$ are shown with percentage figures. Red bars indicate that even the best concentration estimation has $P^{max} < 80\\%$ confidence and personal recommendations are not given for these patients. For these patients, the red and blue bars show the whole reachable ranges. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org)."}
+
+library(ggridges)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+
+simulation <- "X50_B50_A50_I50"
+
+potassium_org_mean <- mean(dialysis$kalium) # 2755
+potassium_org_sd <- sd(dialysis$kalium) # 949
+  
+phosphorous_org_mean <- mean(dialysis$fosfori) # 2755
+phosphorous_org_sd <- sd(dialysis$fosfori) # 949
+
+patient_summary$max_pk_prob <- as.numeric(patient_summary$max_pk_prob)
+patient_summary$max_fppi_prob <- as.numeric(patient_summary$max_fppi_prob)
+patient_summary$max_palb_prob <- as.numeric(patient_summary$max_palb_prob)
+
+min_accepted_recommandation_probability <- 0.80
+
+accepted_intake.df <- data.frame(matrix(ncol = 9, nrow = 0), row.names = NULL)
+
+for (person_id in 1:37) {
+  
+  personal_intake_file <- paste0("./patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/accepted_intake_",person_id,".rds")
+  
+  if (file.exists(personal_intake_file)) {
+    
+    #personal_recommendation <- paste0("./patient_summary/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds")
+
+    personal_intake.df <- readRDS(personal_intake_file)
+    
+    recommendations.df <- personal_intake.df[personal_intake.df$lowest_conc_prob >= min_accepted_recommandation_probability,]
+    
+    if (nrow(recommendations.df) > 0)
+    {
+      accepted_intake.df <- rbind(accepted_intake.df, cbind(person_id, recommendations.df))
+    } else {
+      emptyrow <- as.data.frame(matrix(c(person_id,0,0,0,0,0,0,0,0), ncol = 9, nrow = 1))
+      colnames(emptyrow) <- c("person_id","proposal", "pk_prob", "fppi_prob", "palb_prob", "lowest_conc_prob", "iid_prob", "pot", "pho")  
+      accepted_intake.df <- rbind(accepted_intake.df, emptyrow)
+    }
+
+  } else {
+    emptyrow <- as.data.frame(matrix(c(person_id,0,0,0,0,0,0,0,0), ncol = 9, nrow = 1))
+    colnames(emptyrow) <- c("person_id","proposal", "pk_prob", "fppi_prob", "palb_prob", "lowest_conc_prob", "iid_prob", "pot", "pho")  
+    accepted_intake.df <- rbind(accepted_intake.df, emptyrow)
+  }
+}
+
+# intake reasoning
+
+patient_summary$person_id <- as.character(patient_summary$person_id)
+accepted_intake.df$person_id <- as.character(accepted_intake.df$person_id)
+
+# english abbreviations for dialysis treatments
+patient_summary[patient_summary$treatment == "OHD",]$treatment <- "HD"
+patient_summary[patient_summary$treatment == "KHD",]$treatment <- "HHD"
+patient_summary[patient_summary$treatment == "PD",]$treatment <- "PD"
+
+intake_reasoning.df <- accepted_intake.df %>%
+    inner_join(patient_summary, by="person_id") %>%
+    mutate(max_conc_prob = as.numeric(max_conc_prob)) %>%
+    mutate(max_recom_norm = ifelse(accepted == 1, (as.numeric(max_pot) - potassium_org_mean) / potassium_org_sd + (as.numeric(max_pho) - phosphorous_org_mean) / phosphorous_org_sd + 1000, max_conc_prob)) %>%
+  mutate(person_text = paste0(person_id, " ",treatment))
+
+#  mutate(min_pot = ifelse(min_pot == "-1", 0, as.numeric(min_pot))) %>%
+#  mutate(max_pot = ifelse(max_pot == "-1", 2500, as.numeric(max_pot))) %>%
+#  mutate(min_pho = ifelse(min_pho == "-1", 0, as.numeric(min_pho))) %>%
+#  mutate(max_pho = ifelse(max_pho == "-1", 1000, as.numeric(max_pho))) %>%
+  
+intake_reasoning.df$pot_text <- paste0(round(as.numeric(intake_reasoning.df$min_pot),0)," - ", round(as.numeric(intake_reasoning.df$max_pot),0))
+intake_reasoning.df$pho_text <- paste0(round(as.numeric(intake_reasoning.df$min_pho),0)," - ", round(as.numeric(intake_reasoning.df$max_pho),0))
+
+intake_reasoning.df[intake_reasoning.df$min_pho == "-1",]$pot_text <- ""
+intake_reasoning.df[intake_reasoning.df$min_pho == "-1",]$pho_text <- ""
+                    
+# concentration reasoning
+
+personal_effect_summary$person_id <- as.character(personal_effect_summary$person_id)
+muq0_summary$person_id <- as.character(muq0_summary$person_id)
+personal_targets$person_id <- as.character(personal_targets$person_id)
+
+# TODO: Tallenna myös osittain hyväksytyt pitoisuudet jotta tämä toimisi. näyttäisi kivemmalta.
+# nyt _recejä ei ole tallessa
+
+#  mutate(pk_low_rec = ifelse(max_pk_prob >= 0.8, pk_low_rec, pk_low)) %>%
+#  mutate(pk_high_rec = ifelse(max_pk_prob >= 0.8, pk_high_rec, pk_high)) %>%
+
+conc_reasoning.df <- patient_summary %>%
+  inner_join(personal_effect_summary, by="person_id") %>%
+  inner_join(muq0_summary, by="person_id") %>%
+  inner_join(personal_targets, by="person_id") %>%
+  mutate(accepted = as.numeric(accepted)) %>%
+  mutate(max_conc_prob = as.numeric(max_conc_prob)) %>%
+  mutate(pk_low_rec = ifelse(accepted == 1, pk_low_rec, pk_low)) %>%
+  mutate(pk_high_rec = ifelse(accepted == 1, pk_high_rec, pk_high)) %>%
+  mutate(fppi_low_rec = ifelse(accepted == 1, fppi_low_rec, fppi_low_rec)) %>%
+  mutate(fppi_high_rec = ifelse(accepted == 1, fppi_high_rec, fppi_high)) %>%
+  mutate(palb_low_rec = ifelse(accepted == 1, palb_low_rec, palb_low)) %>%
+  mutate(palb_high_rec = ifelse(accepted == 1, palb_high_rec, palb_high)) %>%
+  mutate(max_recom_norm = ifelse(accepted == 1, (as.numeric(max_pot) - potassium_org_mean) / potassium_org_sd + (as.numeric(max_pho) - phosphorous_org_mean) / phosphorous_org_sd + 1000, max_conc_prob)) %>%
+  mutate(pk_accepted = ifelse(max_pk_prob >= 0.9, "high", ifelse(max_pk_prob >= 0.8, "low", "failed"))) %>%
+  mutate(fppi_accepted = ifelse(max_fppi_prob >= 0.9, "high", ifelse(max_fppi_prob >= 0.8, "low", "failed"))) %>%
+  mutate(palb_accepted = ifelse(max_palb_prob >= 0.9, "high", ifelse(max_palb_prob >= 0.8, "low", "failed")))
+
+mu_q0_color = "grey"
+recom_color = "black"
+default_recom_color = "lightgrey"
+
+conc_reasoning.df$pk_prob_text <- paste0(round(conc_reasoning.df$max_pk_prob * 100, 0), "%")
+conc_reasoning.df$fppi_prob_text <- paste0(round(conc_reasoning.df$max_fppi_prob * 100, 0), "%")
+conc_reasoning.df$palb_prob_text <- paste0(round(conc_reasoning.df$max_palb_prob * 100, 0), "%")
+conc_reasoning.df$treatment <- factor(conc_reasoning.df$treatment)
+
+# Special case: No valid combination found for accepted concentrations
+
+no_valid <- conc_reasoning.df %>%
+  filter(accepted == 0 & max_pk_prob >= min_accepted_recommandation_probability & max_fppi_prob >= min_accepted_recommandation_probability & max_palb_prob >= min_accepted_recommandation_probability) %>%
+  mutate(pk_prob_text = paste0("<",round(as.numeric(max_conc_prob) * 100, 0), "%")) %>%
+  mutate(fppi_prob_text = "") %>%
+  mutate(palb_prob_text = "") %>%
+  mutate(pk_accepted = "failed") %>%
+  mutate(fppi_accepted = "failed") %>%
+  mutate(palb_accepted = "failed")
+
+conc_reasoning.df[conc_reasoning.df$person_id %in% as.vector(no_valid$person_id),] <- no_valid
+
+ProbColorPalette <- c("#F44336","#4CAF50","#81C784")
+ProbColorPalette <- c("#F44336","#0000CD","#00BFFF") # <80%, 90%, 80%
+
+#      geom_text(stat = "unique", aes(x=2500, label=pot_text), size=2.5, width=0.6) +
+
+pot_plot <- ggplot(intake_reasoning.df, aes(x = pot, y = reorder(person_text, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000), group = person_id)) +
+      geom_density_ridges(aes(rel_min_height=0.01, scale = 1.0), fill = "#00BFC4", color = "#009FA4") +
+      theme_bw() +
+      scale_x_continuous(breaks=c(0,2500,5800), limits = c(0,5850)) +
+      geom_text(stat = "unique", aes(x=2500, label=pot_text), size=2.5) +
+      geom_vline(xintercept = 2500, linetype="solid", color = "black", size=0.2) +
+      labs(x = element_blank(), y = "Patients") +
+      theme(axis.text.x = element_text(size=6),axis.title = element_text(size=9), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
+      ggtitle("Pot. (mg/d)")
+
+pho_plot <- ggplot(intake_reasoning.df, aes(x = pho, y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000), group = person_id)) +
+      geom_density_ridges(aes(rel_min_height=0.01, scale = 1.3), fill = "#00BFC4", color = "#009FA4") +
+      theme_bw() +
+      scale_x_continuous(breaks=c(0,1000,2550), limits = c(0,3000)) +
+      geom_text(stat = "unique", aes(x=1000, label=pho_text), size=2.5) +
+      geom_vline(xintercept = 1000, linetype="solid", color = "black", size=0.2) +
+      labs(x = element_blank(), y = element_blank()) +
+      theme(axis.text.x = element_text(size=6),axis.title = element_text(size=9), axis.text.y = element_blank(), plot.title = element_text(size=9)) +
+      ggtitle("Phosp. (mg/d)")
+
+pk_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
+      geom_bar(stat='identity', aes(x=pk_mu_q0), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=pk_high_rec, fill=pk_accepted), width=0.3, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=pk_low_rec), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
+      geom_text(aes(x=1, label=pk_prob_text), size=2.5, fontface="bold", color="white") +
+      theme_bw() +
+      scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
+      scale_x_continuous(breaks=c(0,3.4,4.7,6)) +
+      geom_text(aes(x=pk_lower_limit, label="|"), fontface="plain", size=4, color="black") +
+      geom_text(aes(x=pk_upper_limit, label="|"), fontface="plain", size=4, color="black") +
+      #geom_point(aes(x=pk_lower_limit), shape=3) +
+      #geom_point(aes(x=pk_upper_limit), shape=3) +
+      labs(x = element_blank(), y = element_blank()) +
+      theme(axis.text.y = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=9), plot.title = element_text(size=9)) +
+      ggtitle("P-K (mmol/l)")
+
+fppi_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
+      geom_bar(stat='identity', aes(x=fppi_mu_q0), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=fppi_high_rec, fill=fppi_accepted), width=0.3, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=fppi_low_rec), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
+      geom_text(aes(x=0.5, label=fppi_prob_text), fontface="bold", size=2.5, color="white") +
+      scale_x_continuous(breaks=c(0,0.9,1.78,3)) +
+      geom_text(aes(x=fppi_lower_limit, label="|"), fontface="plain", size=4, color="black") +
+      geom_text(aes(x=fppi_upper_limit, label="|"), fontface="plain", size=4, color="black") +
+      #geom_point(aes(x=fppi_lower_limit), shape=3) +
+      #geom_point(aes(x=fppi_upper_limit), shape=3) +
+      theme_bw() +
+      scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
+      theme(axis.text.y = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=9), plot.title = element_text(size=9)) +
+      labs(x = element_blank(), y = element_blank()) +
+      ggtitle("fP-Pi (mmol/l)")
+
+palb_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
+      geom_bar(stat='identity', aes(x=palb_mu_q0), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=palb_high_rec, fill=palb_accepted), width=0.3, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=palb_low_rec), width=0.6, fill=mu_q0_color, color=mu_q0_color, show.legend = FALSE) +
+      #geom_text(aes(x=0.5, label=palb_accepted), fontface="bold", size=2.5, color="white") +
+      geom_text(aes(x=7, label=palb_prob_text), fontface="bold", size=2.5, color="white") +
+      scale_x_continuous(breaks=c(0,36,45)) +
+      geom_text(aes(x=palb_lower_limit), label="|", fontface="plain", size=4, color="black") +
+      geom_text(aes(x=palb_upper_limit), label="|", fontface="plain", size=4, color="black") +
+      #geom_point(aes(x=palb_lower_limit), shape=3) +
+      #geom_point(aes(x=palb_upper_limit), shape=3) +
+      theme_bw() +
+      scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
+      theme(axis.text.y = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=9), plot.title = element_text(size=9)) +
+      labs(x = element_blank(), y = element_blank()) +
+      ggtitle("P-Alb (g/l)")
+
+recommendation_plot <- grid.arrange(pot_plot, pho_plot, pk_plot, fppi_plot, palb_plot, ncol=5,nrow=1, padding=0,widths=c(1.32,1,1,1,1))
+ggsave(paste0("figures/recommendation_plot_X50_B50.pdf"), plot = recommendation_plot, width = 6, height = 6, scale = 1)
+
+```
+
+## Personal recommendation for a patient
+
+```{r nuts_intake_method_figure, cache=FALSE, eval=TRUE, echo=FALSE,message=FALSE, warning=FALSE, fig.cap="Figure shows detailed intake recommendation for patient 10 from the previous recommendation table. The intake plot on the left shows the posterior samples of diet configurations that result concentrations of plasma potassium (P-K), fasting plasma phosphate (fP-Pi) and plasma albumin (P-Alb) to stay within their recommended limits. These levels are marked with vertical solid lines in the concentration panels. The black point in the middle of intake plot represents the patient's current potassium and phosphorous intake. Current concentrations matching this intake are shown with dashed vertical lines. Reported recommendation is shown with a rectangle that contains $95\\%$ of diet proposals that result recommended concentrations over $90\\%$ accuracy. Colouring of the rectangle sides match the concentration estimates in the right hand panels. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org)."}
+library(ggplot2)
+library(gridExtra)
+library(ggrepel)
+
+# Plot the personal recommendations
+for (person_id in 36:36) {
+  
+  subject_code <- levels(dialysis$potilas)[person_id]
+
+  personal_info <- head(dialysis[dialysis$potilas == subject_code,],1)
+  recommeded_concentrations <- mebn.get_personal_target_guidelines(personal_info, patient_in_dialysis = TRUE)
+
+  pk_recommendations <- c(recommeded_concentrations$lower_limits[1], recommeded_concentrations$upper_limits[1])
+  fppi_recommendations <- c(recommeded_concentrations$lower_limits[2], recommeded_concentrations$upper_limits[2])
+  palb_recommendations <- c(recommeded_concentrations$lower_limits[3], recommeded_concentrations$upper_limits[3])
+    
+#  person_id <- 28
+  simulation <- "X50_B50_A50_I50"
+  
+  accepted_intake <- paste0("./patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/accepted_intake_",person_id,".rds")
+  
+  if (file.exists(accepted_intake)) {
+    personal_recommendation <- paste0("./patient_summary/mv3_cross_two_levels/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds")
+    patient_summary <- readRDS(personal_recommendation)
+    
+    info <- patient_summary[patient_summary$person_id==person_id,]
+    min_k <- min(dialysis[dialysis$potilas == info$subject_code,]$kalium)
+    max_k <- max(dialysis[dialysis$potilas == info$subject_code,]$kalium)
+    avg_k <- mean(dialysis[dialysis$potilas == info$subject_code,]$kalium)
+    
+    min_f <- min(dialysis[dialysis$potilas == info$subject_code,]$fosfori)
+    max_f <- max(dialysis[dialysis$potilas == info$subject_code,]$fosfori)
+    avg_f <- mean(dialysis[dialysis$potilas == info$subject_code,]$fosfori)
+    
+    # these are not anymore retrieved at simulation
+    
+    true_concs <- dialysis %>%
+     filter(potilas == subject_code) %>%
+     select(havainto, pk, fppi, palb)
+
+    info$true_pk <- mean(true_concs$pk)
+    info$true_fppi <- mean(true_concs$fppi)
+    info$true_palb <- mean(true_concs$palb)
+    
+    accepted_intake.df <- readRDS(accepted_intake)
+  
+    if (patient_summary$min_pot != -1)
+    {
+      concs_minmax.df <- readRDS(paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/concs_minmax_",person_id,".rds"))
+    }
+    
+    rec_file <- paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds")
+    personal_recommendation.df <- readRDS(rec_file)
+
+    MyPalette <- c("#3399FF", "#FF7F0E", "#00BFC4", "#D62728", "#AAAAAA")
+    MyPalette <- c("#2860F6", "#FF7F0E", "#00BFC4", "#D62728", "#AAAAAA")
+    #MyPalette <- c("#FF0000", "#00FF00", "#0000FF", "#FAC218", "#AAAAAA")
+    
+    accepted_intake.df$limiting_proposal <- sapply(accepted_intake.df$proposal, function(x) ifelse(x %in% concs_minmax.df$proposal,x,1000000))
+    
+    if (patient_summary$min_pot == -1)
+    {
+        intake_plot <- ggplot(accepted_intake.df, aes(x = pot, y = pho)) +
+          geom_point(aes(colour=lowest_conc_prob), show.legend = TRUE) +
+          labs(x = "Potassium (mg/d)", y = "Phosphorous (mg/d)") +
+          annotate("pointrange",x = avg_k, y = avg_f, ymin = min_f, ymax = max_f, xmin = min_k, xmax = max_k, size = 0.1, colour = "black") +
+          scale_colour_gradient2(low = "#FFFFFF",
+                                 high = "#0000FF",
+                                 midpoint = 0.75,
+                                 breaks = seq(0.5, 1, by = 0.05),
+                                 limits = c(0.5, 1),
+                                 labels = as.character(seq(50, 100, by = 5))) +
+          scale_x_continuous(limits=c(0,5000), breaks=c(0,1000,2000,3000,4000,5000)) +
+          scale_y_continuous(limits=c(0,2500), breaks=c(0,500,1000,1500,2000,2500)) + 
+          theme(legend.position="bottom", axis.text.x = element_text(size=6), axis.title = element_text(size=6), plot.title = element_text(size=10)) + 
+          guides(colour = guide_colorbar(title = "Probability of reaching target concs.", title.theme = element_text(size=7), title.position = "top", barwidth = unit(80,"mm"))) 
+          # geom_label_repel(aes(label = proposal, colour = proposal),
+          #                  data = subset(accepted_intake.df, limiting_proposal < 1000000),
+          #                  box.padding   = 0.35, 
+          #                  point.padding = 0.5,
+          #                  segment.color = "grey")
+        
+        reasoning_plot <- intake_plot
+    } 
+    else
+    {
+      lim_proposals <- accepted_intake.df %>% filter(limiting_proposal < 1000000)
+
+      min_pot <- lim_proposals[which.min(lim_proposals$pot),]$proposal
+      max_pot <- lim_proposals[which.max(lim_proposals$pot),]$proposal
+      min_pho <- lim_proposals[which.min(lim_proposals$pho),]$proposal
+      max_pho <- lim_proposals[which.max(lim_proposals$pho),]$proposal
+
+      # Order density colors like this
+      
+      proposal_order <- data.frame(proposal = c(min_pot, max_pot, min_pho, max_pho))
+      proposal_order$color_order <- c(1,2,3,4)
+      
+      concs_minmax.df <- concs_minmax.df %>% inner_join(proposal_order, by = "proposal")
+      
+      # Plotting
+
+      intake_plot <- ggplot(subset(accepted_intake.df, lowest_conc_prob >= 0.50), aes(x = pot, y = pho)) +
+        geom_point(aes(colour=lowest_conc_prob), show.legend = TRUE) +
+        geom_rect(fill = "#FFFFFF00", color = "white", size = 0.6,
+                    aes(xmin = as.numeric(personal_recommendation.df$min_pot),
+                    ymin = as.numeric(personal_recommendation.df$min_pho),
+                    xmax = as.numeric(personal_recommendation.df$max_pot),
+                    ymax = as.numeric(personal_recommendation.df$max_pho))) +
+        geom_rect(fill = MyPalette[1], color = MyPalette[1], size = 0.6,
+                    aes(xmin = as.numeric(personal_recommendation.df$min_pot),
+                    ymin = as.numeric(personal_recommendation.df$min_pho),
+                    xmax = as.numeric(personal_recommendation.df$max_pot),
+                    ymax = as.numeric(personal_recommendation.df$min_pho))) +
+        geom_rect(fill = MyPalette[2], color = MyPalette[2], size = 0.6,
+                    aes(xmin = as.numeric(personal_recommendation.df$min_pot),
+                    ymin = as.numeric(personal_recommendation.df$max_pho),
+                    xmax = as.numeric(personal_recommendation.df$max_pot),
+                    ymax = as.numeric(personal_recommendation.df$max_pho))) +
+        geom_rect(fill = MyPalette[3], color = MyPalette[3], size = 0.6,
+                    aes(xmin = as.numeric(personal_recommendation.df$min_pot),
+                    ymin = as.numeric(personal_recommendation.df$min_pho),
+                    xmax = as.numeric(personal_recommendation.df$min_pot),
+                    ymax = as.numeric(personal_recommendation.df$max_pho))) +
+        geom_rect(fill = MyPalette[4], color = MyPalette[4], size = 0.6,
+                    aes(xmin = as.numeric(personal_recommendation.df$max_pot),
+                    ymin = as.numeric(personal_recommendation.df$min_pho),
+                    xmax = as.numeric(personal_recommendation.df$max_pot),
+                    ymax = as.numeric(personal_recommendation.df$max_pho))) +        
+        labs(x = "Potassium (mg/d)", y = "Phosphorous (mg/d)") +
+        annotate("pointrange",x = avg_k, y = avg_f, ymin = min_f, ymax = max_f, xmin = min_k, xmax = max_k, size = 0.1, colour = "black") +
+        scale_colour_gradient2(low = "#FFFFFF",
+                               high = "#0096FF",
+                               midpoint = 0.75,
+                               breaks = seq(0.5, 1, by = 0.05),
+                               limits = c(0.5, 1),
+                               labels = as.character(seq(50, 100, by = 5))) +
+        scale_x_continuous(limits=c(0,5800), breaks=c(0,1000,2000,3000,4000,5000,5800)) +
+        scale_y_continuous(limits=c(0,2550), breaks=c(0,500,1000,1500,2000,2550)) + 
+        theme(legend.position="bottom", axis.text = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=10)) + 
+        guides(colour = guide_colorbar(title = "Probability % of reaching target concentrations", title.theme = element_text(size=8), label.theme = element_text(size=6), title.position = "top", barwidth = unit(80,"mm"))) 
+        # geom_label_repel(aes(label = proposal, colour = proposal),
+        #                  data = subset(accepted_intake.df, limiting_proposal < 1000000),
+        #                  box.padding   = 0.35, 
+        #                  point.padding = 0.5,
+        #                  segment.color = "grey")
+      
+      # what kind of concentration these intakes result?
+      pk_plot <- ggplot(concs_minmax.df, aes(x = pk, group=factor(color_order))) +
+        geom_density(aes(colour=factor(color_order)), show.legend = FALSE) +
+        labs(x = "P-K (mmol/l)", y = NULL, title=element_blank()) +
+        geom_vline(xintercept = pk_recommendations, linetype="solid", color = "black", size=0.2) +
+        geom_vline(xintercept = as.numeric(info$true_pk), linetype="dashed", color = "black", size=0.5) +
+        scale_x_continuous(breaks=c(pk_recommendations,3,4,5,6), limits=c(pk_recommendations,2,3,4,5,6,7)) +
+        scale_colour_manual(values = MyPalette) +
+        annotate("rect", xmin=-Inf, xmax=pk_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
+        annotate("rect", xmin=pk_recommendations[2], xmax=Inf, ymax=Inf, ymin=-Inf, alpha = .2) + 
+        theme_bw() +
+        theme(axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9)) 
+      
+      fppi_plot <- ggplot(concs_minmax.df, aes(x = fppi, group=factor(color_order))) +
+        geom_density(aes(color=factor(color_order)), show.legend = FALSE) +
+        labs(x = "fP-Pi (mmol/l)", y = NULL) +
+        geom_vline(xintercept = fppi_recommendations, linetype="solid", color = "black", size=0.2) +
+        geom_vline(xintercept = as.numeric(info$true_fppi), linetype="dashed", color = "black", size=0.5) +
+        scale_x_continuous(breaks=c(fppi_recommendations,c(0,2,2.5)), limits = c(0.7,2.7)) +
+        scale_colour_manual(values = MyPalette) +
+        annotate("rect", xmin=-Inf, xmax=fppi_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
+        annotate("rect", xmin=fppi_recommendations[2], xmax=Inf, ymax=Inf, ymin=-Inf, alpha = .2) + 
+        theme_bw() +
+        theme(axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9))
+      
+      palb_plot <- ggplot(concs_minmax.df, aes(x = palb, color=factor(color_order), group=factor(color_order))) +
+        geom_density(aes(color=factor(color_order)), show.legend = FALSE) +
+        guides(guide = guide_legend(label.position = "bottom")) +
+        labs(x = "P-Alb (g/l)", y = NULL) +
+        geom_vline(xintercept = palb_recommendations, linetype="solid", color = "black", size=0.2) +
+        geom_vline(xintercept = as.numeric(info$true_palb), linetype="dashed", color = "black", size=0.5) +
+        scale_x_continuous(breaks=c(palb_recommendations,30,40), limits = c(30,47)) +
+        scale_colour_manual(values = MyPalette) +
+        annotate("rect", xmin=-Inf, xmax=palb_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
+        annotate("rect", xmin=palb_recommendations[2], xmax=Inf, ymax=Inf, ymin=-Inf, alpha = .2) + 
+        theme_bw() +
+        theme(legend.position="bottom", legend.title = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9))
+      
+      lay <- rbind(c(1,1,2),
+                   c(1,1,3),
+                   c(1,1,4))
+      
+      #reasoning_plot <- grid.arrange(intake_plot, pk_plot, fppi_plot, palb_plot, nrow = 2, ncol=2, padding=0) 
+      reasoning_plot <- grid.arrange(intake_plot, pk_plot, fppi_plot, palb_plot, layout_matrix = lay, padding=0)
+      ggsave(paste0("figures/reasoning_plots/reasoning_plots_",person_id,".pdf"), plot = reasoning_plot, width = 6, height = 6, scale = 1)
+    }
+    
+  } # file exists
+}
+```
+
+```{r plot_effect_density,eval=FALSE,echo=FALSE}
+library(rstan)
+library(ggplot2)
+
+#      "verenrasvojenlaakitys" "diabeteslaakitys"      "aktdvit"               "fosforinsitoja"        "renavit"               "hhepros"               "rasvaepros"           
+# [8]  "mufaepros"             "pufaepros"             "protepros"             "safaepros"             "kuitu"                 "protgkg"               "sukupuoli"            
+# [15] "ekcalkg"               "kalsium"               "fosfori"               "kalium"                "suola"                 "natrium"               "vesi"                 
+# [22] "dvit"
+
+# assumedpredictors_fat_epros Name
+
+# This block can be used for inspecting the effect posteriors in detail
+
+#twolvl_fit <- mebn.get_localfit(target_name = "pk_fppi_palb", local_model_cache = "models/BLMM_gamma_mv_cross/two_levels/")
+
+person_id <- 10
+subject_code <- "2303"
+
+group_id <- as.numeric(unique(dialysis[dialysis$potilas == subject_code,]$hoitoryhma))
+
+group_id <- 3
+                              
+pred <- "pufaepros"
+idx <- which(assumedpredictors_fat_epros$Name == pred)
+palb <- 3
+
+beta <- rstan::extract(twolvl_fit, pars = c(paste0("beta[",palb,",",idx,"]")))
+group_effect <- rstan::extract(twolvl_fit, pars = c(paste0("group_effect[",group_id,",",palb,",",idx,"]")))
+personal_effect <- rstan::extract(twolvl_fit, pars = c(paste0("personal_effect[",person_id,",",palb,",",idx,"]")))
+
+dens1 <- as.data.frame(beta[[1]])
+colnames(dens1) <- c("effect")
+dens1$level <- "general"
+
+dens2 <- as.data.frame(group_effect[[1]])
+colnames(dens2) <- c("effect")
+dens2$level <- "PD_avg"
+
+dens3 <- as.data.frame(personal_effect[[1]])
+colnames(dens3) <- c("effect")
+dens3$level <- "personal"
+
+dens <- rbind(dens1,dens2,dens3)
+
+m1 <- mean(dens1$effect) 
+m2 <- median(dens$effect) 
+
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+m3 <- getmode(dens1$effect) 
+
+getmode_continuous <- function(v) {
+  d <- density(v)
+  d$x[which.max(d$y)]
+}
+
+m4 <- getmode_continuous(dens1$effect) # 0.1939
+
+ggplot(dens1, aes(x=effect, fill=level)) +
+  geom_density(alpha=.25) +
+  geom_vline(xintercept = m1, color = "red") +
+  geom_vline(xintercept = m2, color = "green") +
+  geom_vline(xintercept = m3, color = "blue") +
+  geom_vline(xintercept = m4, color = "yellow") 
+
+```
+```{r scatterplot_for_correlations, eval = FALSE, echo = FALSE}
+
+#m4 pufaepros - palb -2.24843
+
+fig_protepros <- ggplot() +
+  geom_point(data=dialysis, aes(y = palb, x=protepros, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_line(data=dialysis, aes(y = palb, x=protepros, color=potilas), size=0.4, show.legend = FALSE)
+
+fig_protgkg <- ggplot() +
+  geom_point(data=dialysis, aes(y = palb, x=protgkg), size=0.4, show.legend = FALSE) +
+  geom_line(data=dialysis, aes(y = palb, x=protgkg, color=potilas), size=0.4, show.legend = FALSE) 
+
+fig_pufa <- ggplot() +
+  geom_point(data=dialysis, aes(y = palb, x=pufa, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_line(data=dialysis, aes(y = palb, x=pufa, color=potilas), size=0.4, show.legend = FALSE)
+
+fig_pufaepros <- ggplot() +
+  geom_point(data=dialysis, aes(y = palb, x=mufaepros, color=potilas), size=0.4, show.legend = FALSE) +
+  geom_line(data=dialysis, aes(y = palb, x=mufaepros, color=potilas), size=0.4, show.legend = FALSE)
+
+p <- grid.arrange(fig_protepros, fig_protgkg, fig_pufaepros, fig_pufa, nrow = 2, ncol=2, padding=0)
+
+lm(palb ~ protgkg, dialysis) # 1.975
+lm(palb ~ protepros, dialysis) # 0.146
+lm(palb ~ pufa, dialysis) # 0.02345
+lm(palb ~ pufaepros, dialysis) # -0.08943
+
+fig_pufaepros
+
+person_id <- 36
+subject_code <- levels(dialysis$potilas)[person_id]
+  
+dialysis
+mean(dialysis[dialysis$potilas == subject_code,]$fosfori)
+
+```
+

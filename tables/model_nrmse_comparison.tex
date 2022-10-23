@@ -1,0 +1,43 @@
+\documentclass[border=1mm, preview]{standalone}
+\usepackage[active,tightpage]{preview}
+\usepackage{varwidth}
+\usepackage{amssymb, amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e}
+\usepackage{polyglossia}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage[utf8]{inputenc}
+\usepackage{makecell}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{xltxtra,xunicode}
+\usepackage{xcolor}
+\begin{document}
+\begin{table}[H]
+
+\caption{Comparison of model candidates. Personal graphical models with different reaction model candidates are evaluated with NRMSE for each modeled concentration and average model error.}
+\centering
+\begin{tabular}[t]{lrrrr}
+\toprule
+\multicolumn{1}{c}{ } & \multicolumn{4}{c}{NRMSE} \\
+\cmidrule(l{3pt}r{3pt}){2-5}
+\textbf{Reaction model} & \textbf{P-K} & \textbf{fP-Pi} & \textbf{P-Alb} & \textbf{average error}\\
+\midrule
+mv3\_cross\_two\_levels & 0.003 & 0.006 & 0.002 & 0.003\\
+mv3\_cross\_single\_level & 0.078 & 0.233 & 0.103 & 0.078\\
+separate\_pk\_fppi & 0.081 & 0.175 & 0 & 0.081\\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{document}

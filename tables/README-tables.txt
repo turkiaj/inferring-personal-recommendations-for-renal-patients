@@ -1,0 +1,1 @@
+Tables are generated when the main RMarkdown notebook is executed. Content of the generated tex-files were inserted into the article latex-manuscript as is. 

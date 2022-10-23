@@ -1,0 +1,3791 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns
+         http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+<!-- Created by igraph -->
+  <key id="v_name" for="node" attr.name="name" attr.type="string"/>
+  <key id="v_label" for="node" attr.name="label" attr.type="string"/>
+  <key id="v_type" for="node" attr.name="type" attr.type="string"/>
+  <key id="v_color" for="node" attr.name="color" attr.type="string"/>
+  <key id="v_size" for="node" attr.name="size" attr.type="double"/>
+  <key id="v_shape" for="node" attr.name="shape" attr.type="string"/>
+  <key id="v_value" for="node" attr.name="value" attr.type="double"/>
+  <key id="v_value_lCI" for="node" attr.name="value_lCI" attr.type="double"/>
+  <key id="v_value_uCI" for="node" attr.name="value_uCI" attr.type="double"/>
+  <key id="e_weight" for="edge" attr.name="weight" attr.type="double"/>
+  <key id="e_value" for="edge" attr.name="value" attr.type="double"/>
+  <key id="e_value_lCI" for="edge" attr.name="value_lCI" attr.type="double"/>
+  <key id="e_value_uCI" for="edge" attr.name="value_uCI" attr.type="double"/>
+  <key id="e_b_sigma" for="edge" attr.name="b_sigma" attr.type="double"/>
+  <key id="e_b_sigma_lCI" for="edge" attr.name="b_sigma_lCI" attr.type="double"/>
+  <key id="e_b_sigma_uCI" for="edge" attr.name="b_sigma_uCI" attr.type="double"/>
+  <key id="e_shape" for="edge" attr.name="shape" attr.type="string"/>
+  <key id="e_type" for="edge" attr.name="type" attr.type="string"/>
+  <graph id="G" edgedefault="directed">
+    <node id="n0">
+      <data key="v_name">pk</data>
+      <data key="v_label">pk</data>
+      <data key="v_type">200</data>
+      <data key="v_color">#74aaf2</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n1">
+      <data key="v_name">fppi</data>
+      <data key="v_label">fppi</data>
+      <data key="v_type">200</data>
+      <data key="v_color">#74aaf2</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n2">
+      <data key="v_name">palb</data>
+      <data key="v_label">palb</data>
+      <data key="v_type">200</data>
+      <data key="v_color">#74aaf2</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n3">
+      <data key="v_name">sukupuoli</data>
+      <data key="v_label">sukupuoli</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n4">
+      <data key="v_name">verenrasvojenlaakitys</data>
+      <data key="v_label">verenrasvojenlaakitys</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n5">
+      <data key="v_name">fosforinsitoja</data>
+      <data key="v_label">fosforinsitoja</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n6">
+      <data key="v_name">diabeteslaakitys</data>
+      <data key="v_label">diabeteslaakitys</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n7">
+      <data key="v_name">aktdvit</data>
+      <data key="v_label">aktdvit</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n8">
+      <data key="v_name">renavit</data>
+      <data key="v_label">renavit</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n9">
+      <data key="v_name">ekcalkg</data>
+      <data key="v_label">ekcalkg</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n10">
+      <data key="v_name">protepros</data>
+      <data key="v_label">protepros</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n11">
+      <data key="v_name">protgkg</data>
+      <data key="v_label">protgkg</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n12">
+      <data key="v_name">hhepros</data>
+      <data key="v_label">hhepros</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n13">
+      <data key="v_name">rasvaepros</data>
+      <data key="v_label">rasvaepros</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n14">
+      <data key="v_name">safaepros</data>
+      <data key="v_label">safaepros</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n15">
+      <data key="v_name">kuitu</data>
+      <data key="v_label">kuitu</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n16">
+      <data key="v_name">dvit</data>
+      <data key="v_label">dvit</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n17">
+      <data key="v_name">natrium</data>
+      <data key="v_label">natrium</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n18">
+      <data key="v_name">kalsium</data>
+      <data key="v_label">kalsium</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n19">
+      <data key="v_name">kalium</data>
+      <data key="v_label">kalium</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n20">
+      <data key="v_name">suola</data>
+      <data key="v_label">suola</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n21">
+      <data key="v_name">fosfori</data>
+      <data key="v_label">fosfori</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n22">
+      <data key="v_name">vesi</data>
+      <data key="v_label">vesi</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n23">
+      <data key="v_name">mufaepros</data>
+      <data key="v_label">mufaepros</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n24">
+      <data key="v_name">pufaepros</data>
+      <data key="v_label">pufaepros</data>
+      <data key="v_type">100</data>
+      <data key="v_color">#3cd164</data>
+      <data key="v_size">1</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n25">
+      <data key="v_name">beta_aktdvit_pk</data>
+      <data key="v_label">beta_aktdvit</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.19811</data>
+      <data key="v_value_lCI">-0.82232</data>
+      <data key="v_value_uCI">0.44619</data>
+    </node>
+    <node id="n26">
+      <data key="v_name">b_aktdvit_pk</data>
+      <data key="v_label">b_aktdvit</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n27">
+      <data key="v_name">b_sigma_aktdvit_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n28">
+      <data key="v_name">beta_verenrasvojenlaakitys_pk</data>
+      <data key="v_label">beta_verenrasvojenlaakitys</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.0654</data>
+      <data key="v_value_lCI">-0.52267</data>
+      <data key="v_value_uCI">0.65983</data>
+    </node>
+    <node id="n29">
+      <data key="v_name">b_verenrasvojenlaakitys_pk</data>
+      <data key="v_label">b_verenrasvojenlaakitys</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n30">
+      <data key="v_name">b_sigma_verenrasvojenlaakitys_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n31">
+      <data key="v_name">beta_diabeteslaakitys_pk</data>
+      <data key="v_label">beta_diabeteslaakitys</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.36001</data>
+      <data key="v_value_lCI">-0.97085</data>
+      <data key="v_value_uCI">0.25391</data>
+    </node>
+    <node id="n32">
+      <data key="v_name">b_diabeteslaakitys_pk</data>
+      <data key="v_label">b_diabeteslaakitys</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n33">
+      <data key="v_name">b_sigma_diabeteslaakitys_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n34">
+      <data key="v_name">beta_fosforinsitoja_pk</data>
+      <data key="v_label">beta_fosforinsitoja</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.05793</data>
+      <data key="v_value_lCI">-0.62809</data>
+      <data key="v_value_uCI">0.74602</data>
+    </node>
+    <node id="n35">
+      <data key="v_name">b_fosforinsitoja_pk</data>
+      <data key="v_label">b_fosforinsitoja</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n36">
+      <data key="v_name">b_sigma_fosforinsitoja_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n37">
+      <data key="v_name">beta_renavit_pk</data>
+      <data key="v_label">beta_renavit</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.79476</data>
+      <data key="v_value_lCI">-1.00663</data>
+      <data key="v_value_uCI">2.6099</data>
+    </node>
+    <node id="n38">
+      <data key="v_name">b_renavit_pk</data>
+      <data key="v_label">b_renavit</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n39">
+      <data key="v_name">b_sigma_renavit_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n40">
+      <data key="v_name">beta_hhepros_pk</data>
+      <data key="v_label">beta_hhepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.29388</data>
+      <data key="v_value_lCI">-0.93777</data>
+      <data key="v_value_uCI">1.57972</data>
+    </node>
+    <node id="n41">
+      <data key="v_name">b_hhepros_pk</data>
+      <data key="v_label">b_hhepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n42">
+      <data key="v_name">b_sigma_hhepros_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n43">
+      <data key="v_name">beta_rasvaepros_pk</data>
+      <data key="v_label">beta_rasvaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.26896</data>
+      <data key="v_value_lCI">-1.25656</data>
+      <data key="v_value_uCI">1.69444</data>
+    </node>
+    <node id="n44">
+      <data key="v_name">b_rasvaepros_pk</data>
+      <data key="v_label">b_rasvaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n45">
+      <data key="v_name">b_sigma_rasvaepros_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n46">
+      <data key="v_name">beta_mufaepros_pk</data>
+      <data key="v_label">beta_mufaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.0385</data>
+      <data key="v_value_lCI">-0.54114</data>
+      <data key="v_value_uCI">0.63495</data>
+    </node>
+    <node id="n47">
+      <data key="v_name">b_mufaepros_pk</data>
+      <data key="v_label">b_mufaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n48">
+      <data key="v_name">b_sigma_mufaepros_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n49">
+      <data key="v_name">beta_pufaepros_pk</data>
+      <data key="v_label">beta_pufaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.06887</data>
+      <data key="v_value_lCI">-0.47276</data>
+      <data key="v_value_uCI">0.32138</data>
+    </node>
+    <node id="n50">
+      <data key="v_name">b_pufaepros_pk</data>
+      <data key="v_label">b_pufaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n51">
+      <data key="v_name">b_sigma_pufaepros_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n52">
+      <data key="v_name">beta_protepros_pk</data>
+      <data key="v_label">beta_protepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.06429</data>
+      <data key="v_value_lCI">-0.57114</data>
+      <data key="v_value_uCI">0.71516</data>
+    </node>
+    <node id="n53">
+      <data key="v_name">b_protepros_pk</data>
+      <data key="v_label">b_protepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n54">
+      <data key="v_name">b_sigma_protepros_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n55">
+      <data key="v_name">beta_safaepros_pk</data>
+      <data key="v_label">beta_safaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.04233</data>
+      <data key="v_value_lCI">-0.67557</data>
+      <data key="v_value_uCI">0.76306</data>
+    </node>
+    <node id="n56">
+      <data key="v_name">b_safaepros_pk</data>
+      <data key="v_label">b_safaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n57">
+      <data key="v_name">b_sigma_safaepros_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n58">
+      <data key="v_name">beta_kuitu_pk</data>
+      <data key="v_label">beta_kuitu</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.05004</data>
+      <data key="v_value_lCI">-0.35945</data>
+      <data key="v_value_uCI">0.26538</data>
+    </node>
+    <node id="n59">
+      <data key="v_name">b_kuitu_pk</data>
+      <data key="v_label">b_kuitu</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n60">
+      <data key="v_name">b_sigma_kuitu_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n61">
+      <data key="v_name">beta_protgkg_pk</data>
+      <data key="v_label">beta_protgkg</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.15974</data>
+      <data key="v_value_lCI">-1.34543</data>
+      <data key="v_value_uCI">1.04207</data>
+    </node>
+    <node id="n62">
+      <data key="v_name">b_protgkg_pk</data>
+      <data key="v_label">b_protgkg</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n63">
+      <data key="v_name">b_sigma_protgkg_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n64">
+      <data key="v_name">beta_ekcalkg_pk</data>
+      <data key="v_label">beta_ekcalkg</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.12802</data>
+      <data key="v_value_lCI">-1.02013</data>
+      <data key="v_value_uCI">1.29373</data>
+    </node>
+    <node id="n65">
+      <data key="v_name">b_ekcalkg_pk</data>
+      <data key="v_label">b_ekcalkg</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n66">
+      <data key="v_name">b_sigma_ekcalkg_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n67">
+      <data key="v_name">beta_kalsium_pk</data>
+      <data key="v_label">beta_kalsium</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.08807</data>
+      <data key="v_value_lCI">-0.30768</data>
+      <data key="v_value_uCI">0.4848</data>
+    </node>
+    <node id="n68">
+      <data key="v_name">b_kalsium_pk</data>
+      <data key="v_label">b_kalsium</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n69">
+      <data key="v_name">b_sigma_kalsium_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n70">
+      <data key="v_name">beta_sukupuoli_pk</data>
+      <data key="v_label">beta_sukupuoli</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.03139</data>
+      <data key="v_value_lCI">-0.61959</data>
+      <data key="v_value_uCI">0.56043</data>
+    </node>
+    <node id="n71">
+      <data key="v_name">b_sukupuoli_pk</data>
+      <data key="v_label">b_sukupuoli</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n72">
+      <data key="v_name">b_sigma_sukupuoli_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n73">
+      <data key="v_name">beta_natrium_pk</data>
+      <data key="v_label">beta_natrium</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.09842</data>
+      <data key="v_value_lCI">-0.69269</data>
+      <data key="v_value_uCI">0.49699</data>
+    </node>
+    <node id="n74">
+      <data key="v_name">b_natrium_pk</data>
+      <data key="v_label">b_natrium</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n75">
+      <data key="v_name">b_sigma_natrium_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n76">
+      <data key="v_name">beta_fosfori_pk</data>
+      <data key="v_label">beta_fosfori</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.01102</data>
+      <data key="v_value_lCI">-0.65457</data>
+      <data key="v_value_uCI">0.6279</data>
+    </node>
+    <node id="n77">
+      <data key="v_name">b_fosfori_pk</data>
+      <data key="v_label">b_fosfori</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n78">
+      <data key="v_name">b_sigma_fosfori_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n79">
+      <data key="v_name">beta_kalium_pk</data>
+      <data key="v_label">beta_kalium</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.12193</data>
+      <data key="v_value_lCI">-0.23637</data>
+      <data key="v_value_uCI">0.4858</data>
+    </node>
+    <node id="n80">
+      <data key="v_name">b_kalium_pk</data>
+      <data key="v_label">b_kalium</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n81">
+      <data key="v_name">b_sigma_kalium_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n82">
+      <data key="v_name">beta_suola_pk</data>
+      <data key="v_label">beta_suola</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.09911</data>
+      <data key="v_value_lCI">-0.43272</data>
+      <data key="v_value_uCI">0.641</data>
+    </node>
+    <node id="n83">
+      <data key="v_name">b_suola_pk</data>
+      <data key="v_label">b_suola</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n84">
+      <data key="v_name">b_sigma_suola_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n85">
+      <data key="v_name">beta_vesi_pk</data>
+      <data key="v_label">beta_vesi</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.12446</data>
+      <data key="v_value_lCI">-0.40852</data>
+      <data key="v_value_uCI">0.15406</data>
+    </node>
+    <node id="n86">
+      <data key="v_name">b_vesi_pk</data>
+      <data key="v_label">b_vesi</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n87">
+      <data key="v_name">b_sigma_vesi_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n88">
+      <data key="v_name">beta_dvit_pk</data>
+      <data key="v_label">beta_dvit</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.18678</data>
+      <data key="v_value_lCI">-0.40432</data>
+      <data key="v_value_uCI">0.03557</data>
+    </node>
+    <node id="n89">
+      <data key="v_name">b_dvit_pk</data>
+      <data key="v_label">b_dvit</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n90">
+      <data key="v_name">b_sigma_dvit_pk</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n91">
+      <data key="v_name">beta_aktdvit_fppi</data>
+      <data key="v_label">beta_aktdvit</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.20437</data>
+      <data key="v_value_lCI">-0.14238</data>
+      <data key="v_value_uCI">0.56182</data>
+    </node>
+    <node id="n92">
+      <data key="v_name">b_aktdvit_fppi</data>
+      <data key="v_label">b_aktdvit</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n93">
+      <data key="v_name">b_sigma_aktdvit_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n94">
+      <data key="v_name">beta_verenrasvojenlaakitys_fppi</data>
+      <data key="v_label">beta_verenrasvojenlaakitys</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.27808</data>
+      <data key="v_value_lCI">-0.58843</data>
+      <data key="v_value_uCI">0.03651</data>
+    </node>
+    <node id="n95">
+      <data key="v_name">b_verenrasvojenlaakitys_fppi</data>
+      <data key="v_label">b_verenrasvojenlaakitys</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n96">
+      <data key="v_name">b_sigma_verenrasvojenlaakitys_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n97">
+      <data key="v_name">beta_diabeteslaakitys_fppi</data>
+      <data key="v_label">beta_diabeteslaakitys</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.14913</data>
+      <data key="v_value_lCI">-0.17315</data>
+      <data key="v_value_uCI">0.46936</data>
+    </node>
+    <node id="n98">
+      <data key="v_name">b_diabeteslaakitys_fppi</data>
+      <data key="v_label">b_diabeteslaakitys</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n99">
+      <data key="v_name">b_sigma_diabeteslaakitys_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n100">
+      <data key="v_name">beta_fosforinsitoja_fppi</data>
+      <data key="v_label">beta_fosforinsitoja</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.28633</data>
+      <data key="v_value_lCI">-0.09014</data>
+      <data key="v_value_uCI">0.65784</data>
+    </node>
+    <node id="n101">
+      <data key="v_name">b_fosforinsitoja_fppi</data>
+      <data key="v_label">b_fosforinsitoja</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n102">
+      <data key="v_name">b_sigma_fosforinsitoja_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n103">
+      <data key="v_name">beta_renavit_fppi</data>
+      <data key="v_label">beta_renavit</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.34616</data>
+      <data key="v_value_lCI">-0.60654</data>
+      <data key="v_value_uCI">1.3253</data>
+    </node>
+    <node id="n104">
+      <data key="v_name">b_renavit_fppi</data>
+      <data key="v_label">b_renavit</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n105">
+      <data key="v_name">b_sigma_renavit_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n106">
+      <data key="v_name">beta_hhepros_fppi</data>
+      <data key="v_label">beta_hhepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.07501</data>
+      <data key="v_value_lCI">-0.63695</data>
+      <data key="v_value_uCI">0.76419</data>
+    </node>
+    <node id="n107">
+      <data key="v_name">b_hhepros_fppi</data>
+      <data key="v_label">b_hhepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n108">
+      <data key="v_name">b_sigma_hhepros_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n109">
+      <data key="v_name">beta_rasvaepros_fppi</data>
+      <data key="v_label">beta_rasvaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.29943</data>
+      <data key="v_value_lCI">-0.43859</data>
+      <data key="v_value_uCI">1.05423</data>
+    </node>
+    <node id="n110">
+      <data key="v_name">b_rasvaepros_fppi</data>
+      <data key="v_label">b_rasvaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n111">
+      <data key="v_name">b_sigma_rasvaepros_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n112">
+      <data key="v_name">beta_mufaepros_fppi</data>
+      <data key="v_label">beta_mufaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.02957</data>
+      <data key="v_value_lCI">-0.30133</data>
+      <data key="v_value_uCI">0.23064</data>
+    </node>
+    <node id="n113">
+      <data key="v_name">b_mufaepros_fppi</data>
+      <data key="v_label">b_mufaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n114">
+      <data key="v_name">b_sigma_mufaepros_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n115">
+      <data key="v_name">beta_pufaepros_fppi</data>
+      <data key="v_label">beta_pufaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.2198</data>
+      <data key="v_value_lCI">-0.41528</data>
+      <data key="v_value_uCI">-0.02885</data>
+    </node>
+    <node id="n116">
+      <data key="v_name">b_pufaepros_fppi</data>
+      <data key="v_label">b_pufaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n117">
+      <data key="v_name">b_sigma_pufaepros_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n118">
+      <data key="v_name">beta_protepros_fppi</data>
+      <data key="v_label">beta_protepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.05896</data>
+      <data key="v_value_lCI">-0.40127</data>
+      <data key="v_value_uCI">0.29399</data>
+    </node>
+    <node id="n119">
+      <data key="v_name">b_protepros_fppi</data>
+      <data key="v_label">b_protepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n120">
+      <data key="v_name">b_sigma_protepros_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n121">
+      <data key="v_name">beta_safaepros_fppi</data>
+      <data key="v_label">beta_safaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.20646</data>
+      <data key="v_value_lCI">-0.54175</data>
+      <data key="v_value_uCI">0.12959</data>
+    </node>
+    <node id="n122">
+      <data key="v_name">b_safaepros_fppi</data>
+      <data key="v_label">b_safaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n123">
+      <data key="v_name">b_sigma_safaepros_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n124">
+      <data key="v_name">beta_kuitu_fppi</data>
+      <data key="v_label">beta_kuitu</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.25139</data>
+      <data key="v_value_lCI">-0.42495</data>
+      <data key="v_value_uCI">-0.07964</data>
+    </node>
+    <node id="n125">
+      <data key="v_name">b_kuitu_fppi</data>
+      <data key="v_label">b_kuitu</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n126">
+      <data key="v_name">b_sigma_kuitu_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n127">
+      <data key="v_name">beta_protgkg_fppi</data>
+      <data key="v_label">beta_protgkg</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.26713</data>
+      <data key="v_value_lCI">-0.86598</data>
+      <data key="v_value_uCI">0.34022</data>
+    </node>
+    <node id="n128">
+      <data key="v_name">b_protgkg_fppi</data>
+      <data key="v_label">b_protgkg</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n129">
+      <data key="v_name">b_sigma_protgkg_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n130">
+      <data key="v_name">beta_ekcalkg_fppi</data>
+      <data key="v_label">beta_ekcalkg</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.09965</data>
+      <data key="v_value_lCI">-0.50236</data>
+      <data key="v_value_uCI">0.68994</data>
+    </node>
+    <node id="n131">
+      <data key="v_name">b_ekcalkg_fppi</data>
+      <data key="v_label">b_ekcalkg</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n132">
+      <data key="v_name">b_sigma_ekcalkg_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n133">
+      <data key="v_name">beta_kalsium_fppi</data>
+      <data key="v_label">beta_kalsium</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.19002</data>
+      <data key="v_value_lCI">-0.39054</data>
+      <data key="v_value_uCI">0.0079</data>
+    </node>
+    <node id="n134">
+      <data key="v_name">b_kalsium_fppi</data>
+      <data key="v_label">b_kalsium</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n135">
+      <data key="v_name">b_sigma_kalsium_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n136">
+      <data key="v_name">beta_sukupuoli_fppi</data>
+      <data key="v_label">beta_sukupuoli</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.07825</data>
+      <data key="v_value_lCI">-0.38722</data>
+      <data key="v_value_uCI">0.22029</data>
+    </node>
+    <node id="n137">
+      <data key="v_name">b_sukupuoli_fppi</data>
+      <data key="v_label">b_sukupuoli</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n138">
+      <data key="v_name">b_sigma_sukupuoli_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n139">
+      <data key="v_name">beta_natrium_fppi</data>
+      <data key="v_label">beta_natrium</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.07402</data>
+      <data key="v_value_lCI">-0.24119</data>
+      <data key="v_value_uCI">0.37843</data>
+    </node>
+    <node id="n140">
+      <data key="v_name">b_natrium_fppi</data>
+      <data key="v_label">b_natrium</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n141">
+      <data key="v_name">b_sigma_natrium_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n142">
+      <data key="v_name">beta_fosfori_fppi</data>
+      <data key="v_label">beta_fosfori</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.23048</data>
+      <data key="v_value_lCI">-0.07488</data>
+      <data key="v_value_uCI">0.55511</data>
+    </node>
+    <node id="n143">
+      <data key="v_name">b_fosfori_fppi</data>
+      <data key="v_label">b_fosfori</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n144">
+      <data key="v_name">b_sigma_fosfori_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n145">
+      <data key="v_name">beta_kalium_fppi</data>
+      <data key="v_label">beta_kalium</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.11941</data>
+      <data key="v_value_lCI">-0.05842</data>
+      <data key="v_value_uCI">0.29413</data>
+    </node>
+    <node id="n146">
+      <data key="v_name">b_kalium_fppi</data>
+      <data key="v_label">b_kalium</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n147">
+      <data key="v_name">b_sigma_kalium_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n148">
+      <data key="v_name">beta_suola_fppi</data>
+      <data key="v_label">beta_suola</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.16967</data>
+      <data key="v_value_lCI">-0.45987</data>
+      <data key="v_value_uCI">0.11744</data>
+    </node>
+    <node id="n149">
+      <data key="v_name">b_suola_fppi</data>
+      <data key="v_label">b_suola</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n150">
+      <data key="v_name">b_sigma_suola_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n151">
+      <data key="v_name">beta_vesi_fppi</data>
+      <data key="v_label">beta_vesi</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.14737</data>
+      <data key="v_value_lCI">0.02364</data>
+      <data key="v_value_uCI">0.27784</data>
+    </node>
+    <node id="n152">
+      <data key="v_name">b_vesi_fppi</data>
+      <data key="v_label">b_vesi</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n153">
+      <data key="v_name">b_sigma_vesi_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n154">
+      <data key="v_name">beta_dvit_fppi</data>
+      <data key="v_label">beta_dvit</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.04014</data>
+      <data key="v_value_lCI">-0.06828</data>
+      <data key="v_value_uCI">0.14678</data>
+    </node>
+    <node id="n155">
+      <data key="v_name">b_dvit_fppi</data>
+      <data key="v_label">b_dvit</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n156">
+      <data key="v_name">b_sigma_dvit_fppi</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n157">
+      <data key="v_name">beta_aktdvit_palb</data>
+      <data key="v_label">beta_aktdvit</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">2.1124</data>
+      <data key="v_value_lCI">-1.64312</data>
+      <data key="v_value_uCI">5.83008</data>
+    </node>
+    <node id="n158">
+      <data key="v_name">b_aktdvit_palb</data>
+      <data key="v_label">b_aktdvit</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n159">
+      <data key="v_name">b_sigma_aktdvit_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n160">
+      <data key="v_name">beta_verenrasvojenlaakitys_palb</data>
+      <data key="v_label">beta_verenrasvojenlaakitys</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.68203</data>
+      <data key="v_value_lCI">-4.14697</data>
+      <data key="v_value_uCI">2.91118</data>
+    </node>
+    <node id="n161">
+      <data key="v_name">b_verenrasvojenlaakitys_palb</data>
+      <data key="v_label">b_verenrasvojenlaakitys</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n162">
+      <data key="v_name">b_sigma_verenrasvojenlaakitys_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n163">
+      <data key="v_name">beta_diabeteslaakitys_palb</data>
+      <data key="v_label">beta_diabeteslaakitys</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-1.18452</data>
+      <data key="v_value_lCI">-4.69813</data>
+      <data key="v_value_uCI">2.30324</data>
+    </node>
+    <node id="n164">
+      <data key="v_name">b_diabeteslaakitys_palb</data>
+      <data key="v_label">b_diabeteslaakitys</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n165">
+      <data key="v_name">b_sigma_diabeteslaakitys_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n166">
+      <data key="v_name">beta_fosforinsitoja_palb</data>
+      <data key="v_label">beta_fosforinsitoja</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">1.25551</data>
+      <data key="v_value_lCI">-2.9321</data>
+      <data key="v_value_uCI">5.44641</data>
+    </node>
+    <node id="n167">
+      <data key="v_name">b_fosforinsitoja_palb</data>
+      <data key="v_label">b_fosforinsitoja</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n168">
+      <data key="v_name">b_sigma_fosforinsitoja_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n169">
+      <data key="v_name">beta_renavit_palb</data>
+      <data key="v_label">beta_renavit</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.41086</data>
+      <data key="v_value_lCI">-10.16412</data>
+      <data key="v_value_uCI">9.89412</data>
+    </node>
+    <node id="n170">
+      <data key="v_name">b_renavit_palb</data>
+      <data key="v_label">b_renavit</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n171">
+      <data key="v_name">b_sigma_renavit_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n172">
+      <data key="v_name">beta_hhepros_palb</data>
+      <data key="v_label">beta_hhepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">1.5029</data>
+      <data key="v_value_lCI">-5.3412</data>
+      <data key="v_value_uCI">8.23252</data>
+    </node>
+    <node id="n173">
+      <data key="v_name">b_hhepros_palb</data>
+      <data key="v_label">b_hhepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n174">
+      <data key="v_name">b_sigma_hhepros_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n175">
+      <data key="v_name">beta_rasvaepros_palb</data>
+      <data key="v_label">beta_rasvaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">2.67717</data>
+      <data key="v_value_lCI">-4.81078</data>
+      <data key="v_value_uCI">10.17698</data>
+    </node>
+    <node id="n176">
+      <data key="v_name">b_rasvaepros_palb</data>
+      <data key="v_label">b_rasvaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n177">
+      <data key="v_name">b_sigma_rasvaepros_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n178">
+      <data key="v_name">beta_mufaepros_palb</data>
+      <data key="v_label">beta_mufaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.41816</data>
+      <data key="v_value_lCI">-2.45232</data>
+      <data key="v_value_uCI">3.44208</data>
+    </node>
+    <node id="n179">
+      <data key="v_name">b_mufaepros_palb</data>
+      <data key="v_label">b_mufaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n180">
+      <data key="v_name">b_sigma_mufaepros_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n181">
+      <data key="v_name">beta_pufaepros_palb</data>
+      <data key="v_label">beta_pufaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-1.27719</data>
+      <data key="v_value_lCI">-3.24079</data>
+      <data key="v_value_uCI">0.71722</data>
+    </node>
+    <node id="n182">
+      <data key="v_name">b_pufaepros_palb</data>
+      <data key="v_label">b_pufaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n183">
+      <data key="v_name">b_sigma_pufaepros_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n184">
+      <data key="v_name">beta_protepros_palb</data>
+      <data key="v_label">beta_protepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">1.54506</data>
+      <data key="v_value_lCI">-1.64765</data>
+      <data key="v_value_uCI">4.75061</data>
+    </node>
+    <node id="n185">
+      <data key="v_name">b_protepros_palb</data>
+      <data key="v_label">b_protepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n186">
+      <data key="v_name">b_sigma_protepros_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n187">
+      <data key="v_name">beta_safaepros_palb</data>
+      <data key="v_label">beta_safaepros</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.95244</data>
+      <data key="v_value_lCI">-4.53276</data>
+      <data key="v_value_uCI">2.737</data>
+    </node>
+    <node id="n188">
+      <data key="v_name">b_safaepros_palb</data>
+      <data key="v_label">b_safaepros</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n189">
+      <data key="v_name">b_sigma_safaepros_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n190">
+      <data key="v_name">beta_kuitu_palb</data>
+      <data key="v_label">beta_kuitu</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.87227</data>
+      <data key="v_value_lCI">-0.73484</data>
+      <data key="v_value_uCI">2.48906</data>
+    </node>
+    <node id="n191">
+      <data key="v_name">b_kuitu_palb</data>
+      <data key="v_label">b_kuitu</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n192">
+      <data key="v_name">b_sigma_kuitu_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n193">
+      <data key="v_name">beta_protgkg_palb</data>
+      <data key="v_label">beta_protgkg</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-2.48578</data>
+      <data key="v_value_lCI">-8.43715</data>
+      <data key="v_value_uCI">3.56316</data>
+    </node>
+    <node id="n194">
+      <data key="v_name">b_protgkg_palb</data>
+      <data key="v_label">b_protgkg</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n195">
+      <data key="v_name">b_sigma_protgkg_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n196">
+      <data key="v_name">beta_ekcalkg_palb</data>
+      <data key="v_label">beta_ekcalkg</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">1.23781</data>
+      <data key="v_value_lCI">-4.45159</data>
+      <data key="v_value_uCI">6.91285</data>
+    </node>
+    <node id="n197">
+      <data key="v_name">b_ekcalkg_palb</data>
+      <data key="v_label">b_ekcalkg</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n198">
+      <data key="v_name">b_sigma_ekcalkg_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n199">
+      <data key="v_name">beta_kalsium_palb</data>
+      <data key="v_label">beta_kalsium</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.97423</data>
+      <data key="v_value_lCI">-2.81383</data>
+      <data key="v_value_uCI">0.94565</data>
+    </node>
+    <node id="n200">
+      <data key="v_name">b_kalsium_palb</data>
+      <data key="v_label">b_kalsium</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n201">
+      <data key="v_name">b_sigma_kalsium_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n202">
+      <data key="v_name">beta_sukupuoli_palb</data>
+      <data key="v_label">beta_sukupuoli</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">1.88747</data>
+      <data key="v_value_lCI">-1.55933</data>
+      <data key="v_value_uCI">5.2089</data>
+    </node>
+    <node id="n203">
+      <data key="v_name">b_sukupuoli_palb</data>
+      <data key="v_label">b_sukupuoli</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n204">
+      <data key="v_name">b_sigma_sukupuoli_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n205">
+      <data key="v_name">beta_natrium_palb</data>
+      <data key="v_label">beta_natrium</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.18696</data>
+      <data key="v_value_lCI">-3.21569</data>
+      <data key="v_value_uCI">2.92791</data>
+    </node>
+    <node id="n206">
+      <data key="v_name">b_natrium_palb</data>
+      <data key="v_label">b_natrium</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n207">
+      <data key="v_name">b_sigma_natrium_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n208">
+      <data key="v_name">beta_fosfori_palb</data>
+      <data key="v_label">beta_fosfori</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">1.07935</data>
+      <data key="v_value_lCI">-2.25692</data>
+      <data key="v_value_uCI">4.34567</data>
+    </node>
+    <node id="n209">
+      <data key="v_name">b_fosfori_palb</data>
+      <data key="v_label">b_fosfori</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n210">
+      <data key="v_name">b_sigma_fosfori_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n211">
+      <data key="v_name">beta_kalium_palb</data>
+      <data key="v_label">beta_kalium</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.65321</data>
+      <data key="v_value_lCI">-2.47833</data>
+      <data key="v_value_uCI">1.08909</data>
+    </node>
+    <node id="n212">
+      <data key="v_name">b_kalium_palb</data>
+      <data key="v_label">b_kalium</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n213">
+      <data key="v_name">b_sigma_kalium_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n214">
+      <data key="v_name">beta_suola_palb</data>
+      <data key="v_label">beta_suola</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">-0.0183</data>
+      <data key="v_value_lCI">-2.80598</data>
+      <data key="v_value_uCI">2.67696</data>
+    </node>
+    <node id="n215">
+      <data key="v_name">b_suola_palb</data>
+      <data key="v_label">b_suola</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n216">
+      <data key="v_name">b_sigma_suola_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n217">
+      <data key="v_name">beta_vesi_palb</data>
+      <data key="v_label">beta_vesi</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0.21694</data>
+      <data key="v_value_lCI">-0.95933</data>
+      <data key="v_value_uCI">1.38459</data>
+    </node>
+    <node id="n218">
+      <data key="v_name">b_vesi_palb</data>
+      <data key="v_label">b_vesi</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n219">
+      <data key="v_name">b_sigma_vesi_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <node id="n220">
+      <data key="v_name">beta_dvit_palb</data>
+      <data key="v_label">beta_dvit</data>
+      <data key="v_type">beta</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">1.17336</data>
+      <data key="v_value_lCI">0.14877</data>
+      <data key="v_value_uCI">2.18205</data>
+    </node>
+    <node id="n221">
+      <data key="v_name">b_dvit_palb</data>
+      <data key="v_label">b_dvit</data>
+      <data key="v_type">b</data>
+      <data key="v_color">NA</data>
+      <data key="v_size">0.5</data>
+      <data key="v_shape">circle</data>
+      <data key="v_value">0</data>
+      <data key="v_value_lCI">0</data>
+      <data key="v_value_uCI">0</data>
+    </node>
+    <node id="n222">
+      <data key="v_name">b_sigma_dvit_palb</data>
+      <data key="v_label">b_sigma</data>
+      <data key="v_type">b_sigma</data>
+      <data key="v_color">NA</data>
+      <data key="v_shape">circle</data>
+    </node>
+    <edge source="n3" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n4" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n5" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n6" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n7" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n8" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n9" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n10" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n11" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n12" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n13" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n14" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n15" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n16" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n17" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n18" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n19" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n20" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n21" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n22" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n23" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n24" target="n0">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n3" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n4" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n5" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n6" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n7" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n8" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n9" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n10" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n11" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n12" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n13" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n14" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n15" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n16" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n17" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n18" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n19" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n20" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n21" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n22" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n23" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n24" target="n1">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n3" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n4" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n5" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n6" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n7" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n8" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n9" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n10" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n11" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n12" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n13" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n14" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n15" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n16" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n17" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n18" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n19" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n20" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n21" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n22" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n23" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n24" target="n2">
+      <data key="e_shape">NA</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n7" target="n0">
+      <data key="e_weight">-0.19811</data>
+      <data key="e_value">-0.19811</data>
+      <data key="e_value_lCI">-0.82232</data>
+      <data key="e_value_uCI">0.44619</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n25" target="n25">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n27" target="n26">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n26" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n4" target="n0">
+      <data key="e_weight">0.0654</data>
+      <data key="e_value">0.0654</data>
+      <data key="e_value_lCI">-0.52267</data>
+      <data key="e_value_uCI">0.65983</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n28" target="n28">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n30" target="n29">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n29" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n6" target="n0">
+      <data key="e_weight">-0.36001</data>
+      <data key="e_value">-0.36001</data>
+      <data key="e_value_lCI">-0.97085</data>
+      <data key="e_value_uCI">0.25391</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n31" target="n31">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n33" target="n32">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n32" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n5" target="n0">
+      <data key="e_weight">0.05793</data>
+      <data key="e_value">0.05793</data>
+      <data key="e_value_lCI">-0.62809</data>
+      <data key="e_value_uCI">0.74602</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n34" target="n34">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n36" target="n35">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n35" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n8" target="n0">
+      <data key="e_weight">0.79476</data>
+      <data key="e_value">0.79476</data>
+      <data key="e_value_lCI">-1.00663</data>
+      <data key="e_value_uCI">2.6099</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n37" target="n37">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n39" target="n38">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n38" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n12" target="n0">
+      <data key="e_weight">0.29388</data>
+      <data key="e_value">0.29388</data>
+      <data key="e_value_lCI">-0.93777</data>
+      <data key="e_value_uCI">1.57972</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n40" target="n40">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n42" target="n41">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n41" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n13" target="n0">
+      <data key="e_weight">0.26896</data>
+      <data key="e_value">0.26896</data>
+      <data key="e_value_lCI">-1.25656</data>
+      <data key="e_value_uCI">1.69444</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n43" target="n43">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n45" target="n44">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n44" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n23" target="n0">
+      <data key="e_weight">0.0385</data>
+      <data key="e_value">0.0385</data>
+      <data key="e_value_lCI">-0.54114</data>
+      <data key="e_value_uCI">0.63495</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n46" target="n46">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n48" target="n47">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n47" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n24" target="n0">
+      <data key="e_weight">-0.06887</data>
+      <data key="e_value">-0.06887</data>
+      <data key="e_value_lCI">-0.47276</data>
+      <data key="e_value_uCI">0.32138</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n49" target="n49">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n51" target="n50">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n50" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n10" target="n0">
+      <data key="e_weight">0.06429</data>
+      <data key="e_value">0.06429</data>
+      <data key="e_value_lCI">-0.57114</data>
+      <data key="e_value_uCI">0.71516</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n52" target="n52">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n54" target="n53">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n53" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n14" target="n0">
+      <data key="e_weight">0.04233</data>
+      <data key="e_value">0.04233</data>
+      <data key="e_value_lCI">-0.67557</data>
+      <data key="e_value_uCI">0.76306</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n55" target="n55">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n57" target="n56">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n56" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n15" target="n0">
+      <data key="e_weight">-0.05004</data>
+      <data key="e_value">-0.05004</data>
+      <data key="e_value_lCI">-0.35945</data>
+      <data key="e_value_uCI">0.26538</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n58" target="n58">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n60" target="n59">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n59" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n11" target="n0">
+      <data key="e_weight">-0.15974</data>
+      <data key="e_value">-0.15974</data>
+      <data key="e_value_lCI">-1.34543</data>
+      <data key="e_value_uCI">1.04207</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n61" target="n61">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n63" target="n62">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n62" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n9" target="n0">
+      <data key="e_weight">0.12802</data>
+      <data key="e_value">0.12802</data>
+      <data key="e_value_lCI">-1.02013</data>
+      <data key="e_value_uCI">1.29373</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n64" target="n64">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n66" target="n65">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n65" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n18" target="n0">
+      <data key="e_weight">0.08807</data>
+      <data key="e_value">0.08807</data>
+      <data key="e_value_lCI">-0.30768</data>
+      <data key="e_value_uCI">0.4848</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n67" target="n67">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n69" target="n68">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n68" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n3" target="n0">
+      <data key="e_weight">-0.03139</data>
+      <data key="e_value">-0.03139</data>
+      <data key="e_value_lCI">-0.61959</data>
+      <data key="e_value_uCI">0.56043</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n70" target="n70">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n72" target="n71">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n71" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n17" target="n0">
+      <data key="e_weight">-0.09842</data>
+      <data key="e_value">-0.09842</data>
+      <data key="e_value_lCI">-0.69269</data>
+      <data key="e_value_uCI">0.49699</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n73" target="n73">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n75" target="n74">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n74" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n21" target="n0">
+      <data key="e_weight">-0.01102</data>
+      <data key="e_value">-0.01102</data>
+      <data key="e_value_lCI">-0.65457</data>
+      <data key="e_value_uCI">0.6279</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n76" target="n76">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n78" target="n77">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n77" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n19" target="n0">
+      <data key="e_weight">0.12193</data>
+      <data key="e_value">0.12193</data>
+      <data key="e_value_lCI">-0.23637</data>
+      <data key="e_value_uCI">0.4858</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n79" target="n79">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n81" target="n80">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n80" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n20" target="n0">
+      <data key="e_weight">0.09911</data>
+      <data key="e_value">0.09911</data>
+      <data key="e_value_lCI">-0.43272</data>
+      <data key="e_value_uCI">0.641</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n82" target="n82">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n84" target="n83">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n83" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n22" target="n0">
+      <data key="e_weight">-0.12446</data>
+      <data key="e_value">-0.12446</data>
+      <data key="e_value_lCI">-0.40852</data>
+      <data key="e_value_uCI">0.15406</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n85" target="n85">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n87" target="n86">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n86" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n16" target="n0">
+      <data key="e_weight">-0.18678</data>
+      <data key="e_value">-0.18678</data>
+      <data key="e_value_lCI">-0.40432</data>
+      <data key="e_value_uCI">0.03557</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n88" target="n88">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n90" target="n89">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n89" target="n0">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n7" target="n1">
+      <data key="e_weight">0.20437</data>
+      <data key="e_value">0.20437</data>
+      <data key="e_value_lCI">-0.14238</data>
+      <data key="e_value_uCI">0.56182</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n91" target="n91">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n93" target="n92">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n92" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n4" target="n1">
+      <data key="e_weight">-0.27808</data>
+      <data key="e_value">-0.27808</data>
+      <data key="e_value_lCI">-0.58843</data>
+      <data key="e_value_uCI">0.03651</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n94" target="n94">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n96" target="n95">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n95" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n6" target="n1">
+      <data key="e_weight">0.14913</data>
+      <data key="e_value">0.14913</data>
+      <data key="e_value_lCI">-0.17315</data>
+      <data key="e_value_uCI">0.46936</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n97" target="n97">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n99" target="n98">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n98" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n5" target="n1">
+      <data key="e_weight">0.28633</data>
+      <data key="e_value">0.28633</data>
+      <data key="e_value_lCI">-0.09014</data>
+      <data key="e_value_uCI">0.65784</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n100" target="n100">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n102" target="n101">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n101" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n8" target="n1">
+      <data key="e_weight">0.34616</data>
+      <data key="e_value">0.34616</data>
+      <data key="e_value_lCI">-0.60654</data>
+      <data key="e_value_uCI">1.3253</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n103" target="n103">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n105" target="n104">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n104" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n12" target="n1">
+      <data key="e_weight">0.07501</data>
+      <data key="e_value">0.07501</data>
+      <data key="e_value_lCI">-0.63695</data>
+      <data key="e_value_uCI">0.76419</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n106" target="n106">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n108" target="n107">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n107" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n13" target="n1">
+      <data key="e_weight">0.29943</data>
+      <data key="e_value">0.29943</data>
+      <data key="e_value_lCI">-0.43859</data>
+      <data key="e_value_uCI">1.05423</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n109" target="n109">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n111" target="n110">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n110" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n23" target="n1">
+      <data key="e_weight">-0.02957</data>
+      <data key="e_value">-0.02957</data>
+      <data key="e_value_lCI">-0.30133</data>
+      <data key="e_value_uCI">0.23064</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n112" target="n112">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n114" target="n113">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n113" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n24" target="n1">
+      <data key="e_weight">-0.2198</data>
+      <data key="e_value">-0.2198</data>
+      <data key="e_value_lCI">-0.41528</data>
+      <data key="e_value_uCI">-0.02885</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n115" target="n115">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n117" target="n116">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n116" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n10" target="n1">
+      <data key="e_weight">-0.05896</data>
+      <data key="e_value">-0.05896</data>
+      <data key="e_value_lCI">-0.40127</data>
+      <data key="e_value_uCI">0.29399</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n118" target="n118">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n120" target="n119">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n119" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n14" target="n1">
+      <data key="e_weight">-0.20646</data>
+      <data key="e_value">-0.20646</data>
+      <data key="e_value_lCI">-0.54175</data>
+      <data key="e_value_uCI">0.12959</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n121" target="n121">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n123" target="n122">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n122" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n15" target="n1">
+      <data key="e_weight">-0.25139</data>
+      <data key="e_value">-0.25139</data>
+      <data key="e_value_lCI">-0.42495</data>
+      <data key="e_value_uCI">-0.07964</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n124" target="n124">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n126" target="n125">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n125" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n11" target="n1">
+      <data key="e_weight">-0.26713</data>
+      <data key="e_value">-0.26713</data>
+      <data key="e_value_lCI">-0.86598</data>
+      <data key="e_value_uCI">0.34022</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n127" target="n127">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n129" target="n128">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n128" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n9" target="n1">
+      <data key="e_weight">0.09965</data>
+      <data key="e_value">0.09965</data>
+      <data key="e_value_lCI">-0.50236</data>
+      <data key="e_value_uCI">0.68994</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n130" target="n130">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n132" target="n131">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n131" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n18" target="n1">
+      <data key="e_weight">-0.19002</data>
+      <data key="e_value">-0.19002</data>
+      <data key="e_value_lCI">-0.39054</data>
+      <data key="e_value_uCI">0.0079</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n133" target="n133">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n135" target="n134">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n134" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n3" target="n1">
+      <data key="e_weight">-0.07825</data>
+      <data key="e_value">-0.07825</data>
+      <data key="e_value_lCI">-0.38722</data>
+      <data key="e_value_uCI">0.22029</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n136" target="n136">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n138" target="n137">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n137" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n17" target="n1">
+      <data key="e_weight">0.07402</data>
+      <data key="e_value">0.07402</data>
+      <data key="e_value_lCI">-0.24119</data>
+      <data key="e_value_uCI">0.37843</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n139" target="n139">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n141" target="n140">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n140" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n21" target="n1">
+      <data key="e_weight">0.23048</data>
+      <data key="e_value">0.23048</data>
+      <data key="e_value_lCI">-0.07488</data>
+      <data key="e_value_uCI">0.55511</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n142" target="n142">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n144" target="n143">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n143" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n19" target="n1">
+      <data key="e_weight">0.11941</data>
+      <data key="e_value">0.11941</data>
+      <data key="e_value_lCI">-0.05842</data>
+      <data key="e_value_uCI">0.29413</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n145" target="n145">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n147" target="n146">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n146" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n20" target="n1">
+      <data key="e_weight">-0.16967</data>
+      <data key="e_value">-0.16967</data>
+      <data key="e_value_lCI">-0.45987</data>
+      <data key="e_value_uCI">0.11744</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n148" target="n148">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n150" target="n149">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n149" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n22" target="n1">
+      <data key="e_weight">0.14737</data>
+      <data key="e_value">0.14737</data>
+      <data key="e_value_lCI">0.02364</data>
+      <data key="e_value_uCI">0.27784</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n151" target="n151">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n153" target="n152">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n152" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n16" target="n1">
+      <data key="e_weight">0.04014</data>
+      <data key="e_value">0.04014</data>
+      <data key="e_value_lCI">-0.06828</data>
+      <data key="e_value_uCI">0.14678</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n154" target="n154">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n156" target="n155">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n155" target="n1">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n7" target="n2">
+      <data key="e_weight">2.1124</data>
+      <data key="e_value">2.1124</data>
+      <data key="e_value_lCI">-1.64312</data>
+      <data key="e_value_uCI">5.83008</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n157" target="n157">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n159" target="n158">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n158" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n4" target="n2">
+      <data key="e_weight">-0.68203</data>
+      <data key="e_value">-0.68203</data>
+      <data key="e_value_lCI">-4.14697</data>
+      <data key="e_value_uCI">2.91118</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n160" target="n160">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n162" target="n161">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n161" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n6" target="n2">
+      <data key="e_weight">-1.18452</data>
+      <data key="e_value">-1.18452</data>
+      <data key="e_value_lCI">-4.69813</data>
+      <data key="e_value_uCI">2.30324</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n163" target="n163">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n165" target="n164">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n164" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n5" target="n2">
+      <data key="e_weight">1.25551</data>
+      <data key="e_value">1.25551</data>
+      <data key="e_value_lCI">-2.9321</data>
+      <data key="e_value_uCI">5.44641</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n166" target="n166">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n168" target="n167">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n167" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n8" target="n2">
+      <data key="e_weight">-0.41086</data>
+      <data key="e_value">-0.41086</data>
+      <data key="e_value_lCI">-10.16412</data>
+      <data key="e_value_uCI">9.89412</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n169" target="n169">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n171" target="n170">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n170" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n12" target="n2">
+      <data key="e_weight">1.5029</data>
+      <data key="e_value">1.5029</data>
+      <data key="e_value_lCI">-5.3412</data>
+      <data key="e_value_uCI">8.23252</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n172" target="n172">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n174" target="n173">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n173" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n13" target="n2">
+      <data key="e_weight">2.67717</data>
+      <data key="e_value">2.67717</data>
+      <data key="e_value_lCI">-4.81078</data>
+      <data key="e_value_uCI">10.17698</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n175" target="n175">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n177" target="n176">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n176" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n23" target="n2">
+      <data key="e_weight">0.41816</data>
+      <data key="e_value">0.41816</data>
+      <data key="e_value_lCI">-2.45232</data>
+      <data key="e_value_uCI">3.44208</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n178" target="n178">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n180" target="n179">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n179" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n24" target="n2">
+      <data key="e_weight">-1.27719</data>
+      <data key="e_value">-1.27719</data>
+      <data key="e_value_lCI">-3.24079</data>
+      <data key="e_value_uCI">0.71722</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n181" target="n181">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n183" target="n182">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n182" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n10" target="n2">
+      <data key="e_weight">1.54506</data>
+      <data key="e_value">1.54506</data>
+      <data key="e_value_lCI">-1.64765</data>
+      <data key="e_value_uCI">4.75061</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n184" target="n184">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n186" target="n185">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n185" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n14" target="n2">
+      <data key="e_weight">-0.95244</data>
+      <data key="e_value">-0.95244</data>
+      <data key="e_value_lCI">-4.53276</data>
+      <data key="e_value_uCI">2.737</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n187" target="n187">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n189" target="n188">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n188" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n15" target="n2">
+      <data key="e_weight">0.87227</data>
+      <data key="e_value">0.87227</data>
+      <data key="e_value_lCI">-0.73484</data>
+      <data key="e_value_uCI">2.48906</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n190" target="n190">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n192" target="n191">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n191" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n11" target="n2">
+      <data key="e_weight">-2.48578</data>
+      <data key="e_value">-2.48578</data>
+      <data key="e_value_lCI">-8.43715</data>
+      <data key="e_value_uCI">3.56316</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n193" target="n193">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n195" target="n194">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n194" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n9" target="n2">
+      <data key="e_weight">1.23781</data>
+      <data key="e_value">1.23781</data>
+      <data key="e_value_lCI">-4.45159</data>
+      <data key="e_value_uCI">6.91285</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n196" target="n196">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n198" target="n197">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n197" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n18" target="n2">
+      <data key="e_weight">-0.97423</data>
+      <data key="e_value">-0.97423</data>
+      <data key="e_value_lCI">-2.81383</data>
+      <data key="e_value_uCI">0.94565</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n199" target="n199">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n201" target="n200">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n200" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n3" target="n2">
+      <data key="e_weight">1.88747</data>
+      <data key="e_value">1.88747</data>
+      <data key="e_value_lCI">-1.55933</data>
+      <data key="e_value_uCI">5.2089</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n202" target="n202">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n204" target="n203">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n203" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n17" target="n2">
+      <data key="e_weight">-0.18696</data>
+      <data key="e_value">-0.18696</data>
+      <data key="e_value_lCI">-3.21569</data>
+      <data key="e_value_uCI">2.92791</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n205" target="n205">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n207" target="n206">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n206" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n21" target="n2">
+      <data key="e_weight">1.07935</data>
+      <data key="e_value">1.07935</data>
+      <data key="e_value_lCI">-2.25692</data>
+      <data key="e_value_uCI">4.34567</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n208" target="n208">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n210" target="n209">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n209" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n19" target="n2">
+      <data key="e_weight">-0.65321</data>
+      <data key="e_value">-0.65321</data>
+      <data key="e_value_lCI">-2.47833</data>
+      <data key="e_value_uCI">1.08909</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n211" target="n211">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n213" target="n212">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n212" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n20" target="n2">
+      <data key="e_weight">-0.0183</data>
+      <data key="e_value">-0.0183</data>
+      <data key="e_value_lCI">-2.80598</data>
+      <data key="e_value_uCI">2.67696</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n214" target="n214">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n216" target="n215">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n215" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n22" target="n2">
+      <data key="e_weight">0.21694</data>
+      <data key="e_value">0.21694</data>
+      <data key="e_value_lCI">-0.95933</data>
+      <data key="e_value_uCI">1.38459</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n217" target="n217">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n219" target="n218">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n218" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+    <edge source="n16" target="n2">
+      <data key="e_weight">1.17336</data>
+      <data key="e_value">1.17336</data>
+      <data key="e_value_lCI">0.14877</data>
+      <data key="e_value_uCI">2.18205</data>
+      <data key="e_shape">confband</data>
+      <data key="e_type">NA</data>
+    </edge>
+    <edge source="n220" target="n220">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">beta</data>
+    </edge>
+    <edge source="n222" target="n221">
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b_sigma</data>
+    </edge>
+    <edge source="n221" target="n2">
+      <data key="e_weight">1</data>
+      <data key="e_shape">arrow</data>
+      <data key="e_type">b</data>
+    </edge>
+  </graph>
+</graphml>

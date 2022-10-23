@@ -1,0 +1,57 @@
+\documentclass[border=1mm, preview]{standalone}
+\usepackage[active,tightpage]{preview}
+\usepackage{varwidth}
+\usepackage{amssymb, amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e}
+\usepackage{polyglossia}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage[utf8]{inputenc}
+\usepackage{makecell}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{xltxtra,xunicode}
+\usepackage{xcolor}
+\begin{document}
+\begin{table}[H]
+
+\caption{\label{tab:table1}Nutrient predictors of the model.}
+\centering
+\begin{tabu} to \linewidth {>{\raggedright}X>{\raggedright}X}
+\toprule
+\textbf{Nutrient} & \textbf{Sample avg. (min-max)}\\
+\midrule
+Carbonhydrates, E\% & 43.6 (27.1 - 63.6) E\%\\
+Fat E\% & 38.9 (23.4 - 54.1) E\%\\
+Monounsaturated Fatty Acids, E\% & 14.7 (5.6 - 25.1) E\%\\
+Polyunsaturated Fatty Acids, E\% & 7.1 (2.2 - 15.8) E\%\\
+Protein, E\% & 15.1 (9.2 - 22.4) E\%\\
+\addlinespace
+Saturated Fatty Acids, E\% & 13.7 (5.9 - 24.5) E\%\\
+Fiber & 17 (5 - 42) g/d\\
+Protein, g/kg & 0.8 (0.2 - 2.1) g/kg/d\\
+Energy, kcal/kg & 21.8 (5.6 - 58.6) kcal/kg\\
+Calcium & 570 (123 - 1741) mg/d\\
+\addlinespace
+\textbf{Phosphorous} & \textbf{1042 (304 - 2184) mg/d}\\
+\textbf{Potassium} & \textbf{2785 (1026 - 5713) mg/d}\\
+Salt & 6560 (201 - 13863) mg/d\\
+Sodium & 2588 (813 - 5487) mg/d\\
+Water & 1804 (601 - 3613) ml/d\\
+\addlinespace
+Vitamin D & 8 (0 - 31) ug/d\\
+\bottomrule
+\end{tabu}
+\end{table}
+\end{document}
