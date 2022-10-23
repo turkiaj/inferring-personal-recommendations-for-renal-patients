@@ -3,6 +3,8 @@
 
 This repository contains all the data and code for reproducing the analysis and figures in the main article. The analysis is conducted in RMarkdown notebook and it contains all the details for model developing, testing and inference. All the figures and tables at the article are produced with this notebook without any editing.
 
+NOTE: Large Stan-models belonging to models-folder are omitted from GitHub. These can take several hours to fit, but can be produced with the these data and code at Rmd and MEBNv2.r.
+
 Repository contents:
 
 - inferring-personal-recommendations-for-renal-patients.pdf  - PDF extract of the main supplementary document
