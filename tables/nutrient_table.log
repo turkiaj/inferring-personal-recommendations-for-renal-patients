@@ -1,12 +1,12 @@
-This is XeTeX, Version 3.14159265-2.6-0.999992 (TeX Live 2020) (preloaded format=xelatex 2020.9.18)  20 OCT 2022 19:55
+This is XeTeX, Version 3.14159265-2.6-0.999992 (TeX Live 2020) (preloaded format=xelatex 2020.9.18)  23 OCT 2022 15:07
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**/home/jari/projects/partial-diet-recommendation-supplementary/tables/nutrient
-_table.tex
+**/home/jari/projects/inferring-personal-recommendations-for-renal-patients/tab
+les/nutrient_table.tex
 
-(/home/jari/projects/partial-diet-recommendation-supplementary/tables/nutrient_
-table.tex
+(/home/jari/projects/inferring-personal-recommendations-for-renal-patients/tabl
+es/nutrient_table.tex
 LaTeX2e <2020-02-02> patch level 5
 L3 programming layer <2020-09-06> (/home/jari/.TinyTeX/texmf-dist/tex/latex/sta
 ndalone/standalone.cls
@@ -556,11 +556,11 @@ LaTeX Info: Redefining \ttfamily on input line 2.
 ) ) 
 Here is how much of TeX's memory you used:
  11752 strings out of 481674
- 227222 string characters out of 5933564
+ 227258 string characters out of 5933564
  519858 words of memory out of 5000000
  28688 multiletter control sequences out of 15000+600000
  536949 words of font info for 45 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 51i,14n,60p,919b,593s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 51i,14n,60p,931b,593s stack positions out of 5000i,500n,10000p,200000b,80000s
 
 Output written on nutrient_table.pdf (1 page).

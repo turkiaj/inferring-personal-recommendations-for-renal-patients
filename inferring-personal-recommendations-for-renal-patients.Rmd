@@ -859,7 +859,7 @@ C_cross.df <- as.data.frame(C_cross)
 colnames(C_cross.df) <- c("P-K level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-K", sep = ""), "fP-Pi level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> fP-Pi", sep = ""), "P-Alb level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-Alb", sep = ""))
 rownames(C_cross.df) <- c("P-K level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-K", sep = ""), "fP-Pi level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> fP-Pi", sep = ""), "P-Alb level", paste(as.vector(assumedpredictors_fat_epros$Description), "-> P-Alb", sep = ""))
 
-saveRDS(C_cross.df, "subject_effect_correlations_df.rds")
+saveRDS(C_cross.df, "model_evaluation/subject_effect_correlations_df.rds")
 
 # Custom corrplot
 # library(reshape2)   
@@ -899,14 +899,14 @@ C_cross.df <- as.data.frame(C_cross)
 colnames(C_cross.df) <- c("P-K level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-K", sep = ""), "fP-Pi level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> fP-Pi", sep = ""), "P-Alb level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-Alb", sep = ""))
 rownames(C_cross.df) <- c("P-K level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> P-K", sep = ""), "fP-Pi level", paste(as.vector(assumedpredictors_fat_epros$Description), " -> fP-Pi", sep = ""), "P-Alb level", paste(as.vector(assumedpredictors_fat_epros$Description), "-> P-Alb", sep = ""))
 
-saveRDS(C_cross.df, "dialysis_effect_correlations_df.rds")
+saveRDS(C_cross.df, "model_evaluation/dialysis_effect_correlations_df.rds")
 
 ```
 
 ```{r, treatment_effect_correlation_plot, fig.width=14, fig.out="100%", fig.align="left", eval=TRUE, cache=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
 library(ggcorrplot)
 
-C_cross.df <- readRDS("dialysis_effect_correlations_df.rds")
+C_cross.df <- readRDS("model_evaluation/dialysis_effect_correlations_df.rds")
 
 p <- nrow(assumedpredictors_fat_epros) + 1
 
@@ -936,7 +936,7 @@ ggsave(paste0("figures/treatment_level_reaction_correlations.pdf"), plot = cplot
 ```{r, subject_effect_correlation_plot, fig.width=14, fig.out="100%", fig.align="left", eval=TRUE, cache=FALSE, echo=FALSE}
 library(ggcorrplot)
 
-C_cross.df <- readRDS("subject_effect_correlations_df.rds")
+C_cross.df <- readRDS("model_evaluation/subject_effect_correlations_df.rds")
 
 p <- nrow(assumedpredictors_fat_epros) + 1
 
@@ -973,7 +973,7 @@ knitr::include_graphics("figures/subject_level_reaction_correlations.pdf")
 ```
 
 ```{r, top_treatment_correlations, eval=TRUE, cache=FALSE, echo=FALSE}
-C_cross_g.df <- readRDS("dialysis_effect_correlations_df.rds")
+C_cross_g.df <- readRDS("model_evaluation/dialysis_effect_correlations_df.rds")
 
 effect_cor.df <- data.frame(matrix(ncol = 3, nrow = 0), row.names = NULL)
 
@@ -1036,7 +1036,7 @@ kable(rbind(top_pot_correlations, top_pho_correlations), "latex", escape = T, bo
 
 
 ```{r, top_subject_correlations, eval=TRUE, cache=FALSE, echo=FALSE}
-C_cross_s.df <- readRDS("subject_effect_correlations_df.rds")
+C_cross_s.df <- readRDS("model_evaluation/subject_effect_correlations_df.rds")
 
 effect_cor.df <- data.frame(matrix(ncol = 3, nrow = 0), row.names = NULL)
 
