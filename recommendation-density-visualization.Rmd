@@ -1,0 +1,110 @@
+---
+title: "Density analysis"
+output: html_document
+date: '2022-10-26'
+---
+
+```{r}
+library(plotly)
+library(htmlwidgets)
+library(utils)
+library(MASS)
+
+person_id <- 36
+
+simulation <- "X50_B50_A50_I50"
+  
+accepted_intake <- paste0("./patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/accepted_intake_",person_id,".rds")
+accepted_intake.df <- readRDS(accepted_intake)
+
+personal_recommendation <- paste0("./patient_summary/mv3_cross_two_levels/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds")
+patient_summary <- readRDS(personal_recommendation)
+
+intake <- subset(accepted_intake.df, lowest_conc_prob >= 0)
+
+den3d <- kde2d(intake$pot, intake$pho)
+
+# 3D visual
+
+# plot_ly(x=den3d$x, y=den3d$y, z=den3d$z, type = "surface",
+#         contours = list(
+#           z = list(show = TRUE, size = 0.02, color = 'black')
+#         )) %>% 
+#   add_surface() %>%
+#   layout(
+#     scene = list(
+#       xaxis = list(title = "potassium (mg/d)"),
+#       yaxis = list(title = "phosphorous (mg/d)"),
+#       zaxis = list(title = "recommendation")
+#     )
+#   ) 
+
+# 3D animation
+
+fig <- 
+  plot_ly(x=den3d$x, y=den3d$y, z=den3d$z, type = "surface",
+          contours = list(
+            z = list(show = TRUE, size = 0.02, color = 'black')
+          )) %>% layout(showlegend = FALSE) %>% 
+  add_surface(showlegend = FALSE) %>%
+  layout(showlegend = FALSE,
+    scene = list(
+    xaxis = list(title = "potassium (mg/d)"),
+    yaxis = list(title = "phosphorous (mg/d)"),
+    zaxis = list(title = "recommendation",nticks=4,range=c(0,200,400,600),backgroundcolor="rgb(255,255,255)", gridcolor="rgb(200,200,200)",zerolinecolor="rgb(200,200,200)"),
+    camera = list(
+      eye = list(
+        x = 1.25,
+        y = 1.25,
+        z = 1.25
+      ),
+      center = list(x = 0,
+                    y = 0,
+                    z = 0)
+  ))) %>%
+  onRender("
+      function(el, x){
+  var id = el.getAttribute('id');
+  var gd = document.getElementById(id);
+  Plotly.update(id).then(attach);
+  function attach() {
+    var cnt = 0;
+    
+    function run() {
+      rotate('scene', Math.PI / 180);
+      requestAnimationFrame(run);
+    } 
+    run();
+    
+    function rotate(id, angle) {
+      var eye0 = gd.layout[id].camera.eye
+      var rtz = xyz2rtz(eye0);
+      rtz.t += angle;
+      
+      var eye1 = rtz2xyz(rtz);
+      Plotly.relayout(gd, id + '.camera.eye', eye1)
+    }
+    
+    function xyz2rtz(xyz) {
+      return {
+        r: Math.sqrt(xyz.x * xyz.x + xyz.y * xyz.y),
+        t: Math.atan2(xyz.y, xyz.x),
+        z: xyz.z
+      };
+    }
+    
+    function rtz2xyz(rtz) {
+      return {
+        x: rtz.r * Math.cos(rtz.t),
+        y: rtz.r * Math.sin(rtz.t),
+        z: rtz.z
+      };
+    }
+  };
+}
+    ")
+
+htmlwidgets::saveWidget(partial_bundle(fig), file = "recommendation_density.HTML", selfcontained = TRUE)
+
+utils::browseURL("recommendation_density.HTML")
+```
