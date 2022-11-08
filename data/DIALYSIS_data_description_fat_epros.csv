@@ -58,22 +58,22 @@ energiakcal;Energia (kcal);Energy (kcal);Energy;0;;;;;kcal;Gaussian;0;0
 energiakj;Energia (kJ);Energy, kJ;Energy;0;0;;;;kJ;Gaussian;0;0
 ekcalkg;Energia kcal/kg;Energy, kcal/kg;Energy;0;0;0;;;kcal/kg;Gaussian;1;0
 proteiini;Proteiini;Protein;Protein;0;0;100;;;g/d;Gaussian;1;0
-protepros;Proteiini E%;Protein, E%;Protein, E%;100;0;100;;;E%;Gaussian;1;100
+protepros;Proteiini E%;Protein, E%;Protein, E%;100;0;22.9;;;E%;Gaussian;1;100
 protgkg;Prot g/kg;Protein, g/kg;Protein, g/kg;0;0;1000;;;g/kg/d;Gaussian;1;0
 hiilihydraatti;Hiilihydraatti;Carbonhydrates;Carbonhydrates;0;0;1000;g/d;;;Gaussian;1;0
 hhepros;Hiilihydraatti;Carbonhydrates, E%;Carbonhydrates, E%;100;0;100;;;E%;Gaussian;1;101
 rasva;Rasva;Fat;Fat;0;0;500;;;g/d;Gaussian;1;0
-rasvaepros;Rasva;Fat E%;Fat E%;0;0;100;;;E%;Gaussian;1;0
+rasvaepros;Rasva;Fat E%;Fat E%;0;0;13.6;;;E%;Gaussian;1;0
 safa;Safa;Safa;SAFA;0;0;500;;;g/d;Gaussian;1;0
-safaepros;Safa E%;Saturated Fatty Acids, E%;SFA, E%;100;0;100;;;E%;Gaussian;1;102
+safaepros;Safa E%;Saturated Fatty Acids, E%;SFA, E%;100;0;19.7;;;E%;Gaussian;1;102
 mufa;Mufa;Monounsaturated Fatty Acids;MUFA;100;0;500;;;g/d;Gaussian;1;0
 pufa;Pufa;Polyunsaturated Fatty Acids;PUFA;100;0;500;;;g/d;Gaussian;1;0
 sakkaroosi;Sakkaroosi;Sacrose;Sacrose;0;0;1000;;;g/d;Gaussian;0;0
 kuitu;Kuitu, kokonais;Fiber;Fiber;100;0;1000;;;g/d;Gaussian;0;103
 dvit;D-vit.;Vitamin D;Vitamin D;100;0;1000;;;ug/d;Gaussian;0;104
 natrium;Natrium;Sodium;Sodium;100;0;10000;;;mg/d;Gaussian;0;105
-kalsium;Ca;Calcium;Calcium;100;0;5000;;;mg/d;Gaussian;0;106
-kalium;Kalium;Potassium;Potassium;100;0;5000;;;mg/d;Gaussian;0;107
+kalsium;Ca;Calcium;Calcium;100;400;2550;;;mg/d;Gaussian;0;106
+kalium;Kalium;Potassium;Potassium;100;0;5800;;;mg/d;Gaussian;0;107
 suola;Suola;Salt;Salt;100;0;20000;;;mg/d;Gaussian;0;108
-fosfori;Fosfori;Phosphorous;Phosphorous;100;0;2000;;;mg/d;Gaussian;0;108
+fosfori;Fosfori;Phosphorous;Phosphorous;100;0;2550;;;mg/d;Gaussian;0;108
 vesi;Vesi;Water;Water;100;0;5000;;;ml/d;Gaussian;0;109

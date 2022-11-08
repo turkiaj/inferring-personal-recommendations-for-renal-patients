@@ -68,6 +68,8 @@ mufa_e$Unit <- "E%"
 mufa_e$Description <- "Monounsaturated Fatty Acids, E%"
 mufa_e$ShortDescription <- "MUFA, E%"
 mufa_e$Descriptionfin <- "Mufa E%"
+mufa_e$Lowerbound <- 0
+mufa_e$Upperbound <- 18.1
 datadesc_fat_epros <- rbind(datadesc_fat_epros, mufa_e)
 
 pufa_e <- datadesc_fat_epros[datadesc_fat_epros$Name=="safaepros",]
@@ -76,6 +78,8 @@ pufa_e$Unit <- "E%"
 pufa_e$Description <- "Polyunsaturated Fatty Acids, E%"
 pufa_e$ShortDescription <- "PUFA, E%"
 pufa_e$Descriptionfin <- "Pufa E%"
+pufa_e$Lowerbound <- 0
+pufa_e$Upperbound <- 8.8
 datadesc_fat_epros <- rbind(datadesc_fat_epros, pufa_e)
 
 # Remove g/d features from predictors
@@ -383,6 +387,271 @@ mse_summary
 
 ```
 
+```{r recommendation_with_custom_utility, eval=FALSE,echo=FALSE, message=FALSE}
+source("mebn/v3/MEBNv3.r")
+library(igraph)
+library(gridExtra)
+library(dplyr)
+  
+# Query parameters
+simulation <- "X50_B50_A50_I50"
+
+# - data parameters
+graph_dir <- "graphs/mv3_cross_two_levels/"
+
+datadesc <- datadesc_fat_epros
+
+# The conditioned variables are introduced in data description
+datadesc$Conditioned <- 0 
+datadesc[datadesc$Name == "kalium",]$Conditioned <- 1
+datadesc[datadesc$Name == "fosfori",]$Conditioned <- 1
+#datadesc[datadesc$Name == "protepros",]$Conditioned <- 1
+
+# Calculate statistics for normalizing the data
+
+org_stats <- data.frame(name = subset(assumedpredictors$Name, assumedpredictors$Distribution == "Gaussian"))
+org_stats$mean <- sapply(org_stats$name, function(x) mean(dialysis[[x]]))
+org_stats$sd <- sapply(org_stats$name, function(x) sd(dialysis[[x]]))
+
+uniform_proposaldist_limits <- c(((as.numeric(datadesc[datadesc$Name=="kalium",]$Lowerbound) - org_stats[org_stats$name == "kalium",]$mean) / org_stats[org_stats$name == "kalium",]$sd),
+                                 ((as.numeric(datadesc[datadesc$Name=="kalium",]$Upperbound) - org_stats[org_stats$name == "kalium",]$mean) / org_stats[org_stats$name == "kalium",]$sd),
+                                 ((as.numeric(datadesc[datadesc$Name=="fosfori",]$Lowerbound) - org_stats[org_stats$name == "fosfori",]$mean) / org_stats[org_stats$name == "fosfori",]$sd),
+                                 ((as.numeric(datadesc[datadesc$Name=="fosfori",]$Upperbound) - org_stats[org_stats$name == "fosfori",]$mean) / org_stats[org_stats$name == "fosfori",]$sd),
+                                 ((as.numeric(datadesc[datadesc$Name=="protepros",]$Lowerbound) - org_stats[org_stats$name == "protepros",]$mean) / org_stats[org_stats$name == "protepros",]$sd),
+                                 ((as.numeric(datadesc[datadesc$Name=="protepros",]$Upperbound) - org_stats[org_stats$name == "protepros",]$mean) / org_stats[org_stats$name == "protepros",]$sd))
+
+# - collect personal statistics in this data frame
+patient_summary <- data.frame(matrix(ncol = 19, nrow = 0), row.names = NULL)
+
+colnames(patient_summary) <- c("person_id", "subject_code", "treatment", "accepted", "max_conc_prob", "max_pk_prob", "max_fppi_prob", "max_palb_prob", "potassium_low", "phosphorous_low", "potassium_high", "phosphorous_high","pk_min","pk_max", "fppi_min", "fppi_max", "palb_min", "palb_max")
+
+#for (person_id in 1:37) {
+  
+  person_id <- 36
+
+  print(paste0("Simulating patient ", person_id))
+
+  subject_code <- levels(dialysis$potilas)[person_id]
+  treatment <- unique(dialysis[dialysis$potilas == subject_code,]$hoitomuoto)
+  
+  # Normal ranges of concentration are personalized
+  personal_info <- head(dialysis[dialysis$potilas == subject_code,],1)
+  recommeded_concentrations <- mebn.get_personal_target_guidelines(personal_info, patient_in_dialysis = TRUE)
+  
+  #print(paste0("personal lower limits: ", as.vector(recommeded_concentrations$lower_limits)))
+  #print(paste0("personal upper limits: ", as.vector(recommeded_concentrations$upper_limits)))
+  
+  personal_model_dir <- paste0(graph_dir,person_id)
+  personal_graph <- read.graph(paste0(personal_model_dir, "/personal_graph.graphml"), "graphml")
+  
+  # Sample diet proposals and matching concentration predictions
+  
+  intake_model <- mebn.Query(reaction_graph = personal_graph,
+                           graph_dir = personal_model_dir,
+                           queried_nodes = c("kalium","fosfori","protepros"),
+                           query = recommeded_concentrations,
+                           proposal_limits = uniform_proposaldist_limits,
+                           stan_model_file = "diet/general_intake_recommendation.stan",
+                           conc_lower_limits = as.vector(recommeded_concentrations$lower_limits),
+                           conc_upper_limits = as.vector(recommeded_concentrations$upper_limits),
+                           beta_point_est = "mean",
+                           param_point_est = "mean",
+                           X_sd_coef = 0, # coef = 0 forces to use the point estimate
+                           X_point_est = "mean",
+                           posterior_samples = 1000,
+                           repeat_only = 0,
+                           condition_in_repeat = 0)
+  
+  # Extract all the samples and correlate concentrations and intake with proposal ids
+  
+  result <- rstan::extract(intake_model)
+
+  pk <- result$concentration[,,1]
+  fppi <- result$concentration[,,2]
+  palb <- result$concentration[,,3]
+
+  proposals <- 1:dim(pk)[1]
+  proposal_samples <- 1:dim(pk)[2]
+
+  concs.df <- data.frame(proposal=rep(proposals, each = length(proposal_samples)), pk=as.vector(t(pk)),fppi=as.vector(t(fppi)),palb=as.vector(t(palb)))
+  
+  # Get the original scale levels of potassium and potassium from each diet proposal
+  pot <- result$Q[,1] * org_stats[org_stats$name == "kalium",]$sd + org_stats[org_stats$name == "kalium",]$mean
+  pho <- result$Q[,2] * org_stats[org_stats$name == "fosfori",]$sd + org_stats[org_stats$name == "fosfori",]$mean
+  prot <- result$Q[,3] * org_stats[org_stats$name == "protepros",]$sd + org_stats[org_stats$name == "protepros",]$mean
+  
+  intake_proposals.df <- data.frame(proposal=proposals, pot=as.vector(pot),pho=as.vector(pho),prot=as.vector(prot))
+  
+  #  Calculate probability of each proposal being within the recommended concentration limits.
+  #  The calculation is done based on empirical cumulative distribution function (ecdf) for each concentration distribution. 
+  
+  pk_recommendations <- c(recommeded_concentrations$lower_limits[1], recommeded_concentrations$upper_limits[1])
+  fppi_recommendations <- c(recommeded_concentrations$lower_limits[2], recommeded_concentrations$upper_limits[2])
+  palb_recommendations <- c(recommeded_concentrations$lower_limits[3], recommeded_concentrations$upper_limits[3])
+
+  proposal_probs.df <- concs.df %>%
+  select(proposal,pk,fppi,palb) %>%
+  group_by(proposal) %>%
+  summarise(
+    pk_prob = (ecdf(pk)(pk_recommendations[2]) - ecdf(pk)(pk_recommendations[1])),
+    fppi_prob = (ecdf(fppi)(fppi_recommendations[2]) - ecdf(fppi)(fppi_recommendations[1])),
+    palb_prob = (ecdf(palb)(palb_recommendations[2]) - ecdf(palb)(palb_recommendations[1])),
+    lowest_conc_prob = min(pk_prob, fppi_prob, palb_prob),
+    iid_prob = pk_prob * fppi_prob * palb_prob,
+  )
+  
+  # Filter all accepted diet proposals with a fixed probability limit. 
+  acceptance_probability <- 0.50
+  
+  #   This is denoted with constant 'c' in Algorithm 1.
+  recommandation_probability_levels <- c(0.90, 0.80)
+  
+  accepted <- 0
+
+  conc_limits <- concs.df %>%
+  select(pk,fppi,palb) %>%
+  summarise(
+            pk_low = min(pk), 
+            fppi_low = min(fppi), 
+            palb_low = min(palb),
+            pk_high = max(pk), 
+            fppi_high = max(fppi), 
+            palb_high = max(palb)
+  )
+
+  # This requires all concentrations from one proposal to be accepted
+  # distribution of accepted proposals    
+
+  accepted_proposals.df <- proposal_probs.df %>%
+    filter(lowest_conc_prob >= acceptance_probability) %>%
+    as.data.frame()
+
+  print(paste0("Proposals accepted ", nrow(accepted_proposals.df)))
+  
+  # Join intake and resulting concentrations
+  accepted_intake.df <- accepted_proposals.df %>% inner_join(intake_proposals.df, by="proposal")
+
+  # Highest probability that can be reached  
+  max_conc_prob <- max(proposal_probs.df$lowest_conc_prob)
+
+  # Search for the widest nutrient intake range within the accepted proposals  
+
+  accepted <- 0
+  min_pot <- -1
+  min_pho <- -1 
+  max_pot <- -1
+  max_pho <- -1
+
+  accepted_recommandation_probability <- 0
+
+  # - Do we have any accepted proposals?
+  if (nrow(accepted_intake.df) > 0)
+  {
+    saveRDS(accepted_intake.df, paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/accepted_intake_",person_id,".rds"))
+
+    # Loop possible recommandation_probability_levels and fallback to lower level if higher returns empty
+    
+    for (recommandation_probability in recommandation_probability_levels)
+    {
+      # Filter recommendation distributions
+      recommendation_intake.df <- accepted_intake.df %>%
+        filter(lowest_conc_prob >= recommandation_probability) %>%
+        as.data.frame()
+      
+      print(paste0("Proposals narrowed to ", nrow(recommendation_intake.df)))
+  
+     if (nrow(recommendation_intake.df) > 0)
+     {
+        accepted <- 1
+        accepted_recommandation_probability <- recommandation_probability
+  
+        # Pick 2.5% and 97.5% quantiles of recommendation posteriors as recommendation limits   
+        pot_quantiles <- quantile(recommendation_intake.df$pot, probs = c(0.025,0.975))
+        pho_quantiles <- quantile(recommendation_intake.df$pho, probs = c(0.025,0.975))
+    
+        # And then closest sampled proposals matching those limits
+        min_pot_row <- recommendation_intake.df[which.min(abs(recommendation_intake.df$pot-pot_quantiles[1])),]
+        max_pot_row <- recommendation_intake.df[which.min(abs(recommendation_intake.df$pot-pot_quantiles[2])),]
+        min_pho_row <- recommendation_intake.df[which.min(abs(recommendation_intake.df$pho-pho_quantiles[1])),]
+        max_pho_row <- recommendation_intake.df[which.min(abs(recommendation_intake.df$pho-pho_quantiles[2])),]
+    
+        # - and nutrient levels
+        min_pot <- as.numeric(min_pot_row$pot)
+        max_pot <- as.numeric(max_pot_row$pot)
+        min_pho <- as.numeric(min_pho_row$pho)
+        max_pho <- as.numeric(max_pho_row$pho)
+        
+        # - concentrations matching those proposals    
+        concs_minmax.df <- concs.df[concs.df$proposal %in% c(min_pot_row$proposal,max_pot_row$proposal,min_pho_row$proposal,max_pho_row$proposal),]
+        
+        saveRDS(concs_minmax.df, paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/concs_minmax_",person_id,".rds"))
+        
+        # Break out from loop with this probability
+        break
+     } 
+      else
+     {
+        accepted <- 0
+        min_pot <- -1
+        min_pho <- -1 
+        max_pot <- -1
+        max_pho <- -1
+     }
+    }
+  #}
+
+  # Here the min and max concentrations match the nutrient recommendations
+  personal_intake <- cbind(person_id,
+                                   subject_code,
+                                   treatment,
+                                   accepted,
+                                   max_conc_prob,
+                                   max_pk_prob = max(proposal_probs.df$pk_prob),
+                                   max_fppi_prob = max(proposal_probs.df$fppi_prob),
+                                   max_palb_prob = max(proposal_probs.df$palb_prob),
+                                   min_pot, 
+                                   min_pho, 
+                                   max_pot, 
+                                   max_pho,
+                                   accepted_recommandation_probability)
+
+  personal_recommendation <- cbind(personal_intake, conc_limits)
+  patient_summary <- rbind(patient_summary,personal_recommendation)
+
+  saveRDS(personal_recommendation, paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds"))
+} 
+
+saveRDS(patient_summary, paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/recommendation_summary_posterior_params.rds"))
+
+```
+
+```{r}
+
+# pot -2.897167 - 3.137178
+# pho -2.74657 - 3.97615
+
+pot_prior_dens <- result$pot_prior * potassium_org_sd + potassium_org_mean
+pot_prior_dens <- as.data.frame(result$pot_prior)
+
+pot_prior_dens
+
+pot_prior <- ggplot(pot_prior_dens) + 
+    geom_density(aes(x = pot), fill = "#0000FF", colour = "#0000FF", alpha = 0.2, show.legend = TRUE) +
+    labs(x = "Potassium (mg/d)", y = "") +
+    scale_x_continuous(limits=c(0,5800), breaks=c(0,1000,2000,3000,4000,5000,5800)) +
+    theme_bw() +
+    theme(axis.text.y = element_blank())
+
+pot_post <- ggplot(subset(accepted_intake.df, lowest_conc_prob >= 0.50)) + 
+    geom_density(aes(x = pot), fill = "#0000FF", colour = "#0000FF", alpha = 0.2, show.legend = TRUE) +
+    labs(x = "Potassium (mg/d)", y = "") +
+    scale_x_continuous(limits=c(0,5800), breaks=c(0,1000,2000,3000,4000,5000,5800)) +
+    theme_bw() +
+    theme(axis.text.y = element_blank())
+
+pot_prior
+pot_post
+```
 
 ```{r recommendation_overview_simulation, eval=FALSE,echo=FALSE, message=FALSE}
 source("mebn/v3/MEBNv3.r")

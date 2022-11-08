@@ -40,6 +40,8 @@ transformed data {
 
   for (m in 1:responses) {
     mu_q0[m] = intercept_point[m] + dot_product(X_evidence_point, X_beta_point[m]);
+    
+    // Leave 0.1 margin so that sampling can start from initial values of Q
 
     if (Y_lower_limits[m] < mu_q0[m]-0.1) {
       // Q = 0 point is above the lower concentration limit and it is a valid proposal
@@ -70,7 +72,8 @@ parameters {
   real<lower=linear_transformation> palb;
 
   vector[r] Q_trans;
-  #vector[r] Q;
+  //vector[r] Q;
+  real pot_prior;
 }
 
 transformed parameters {
@@ -78,8 +81,11 @@ transformed parameters {
   real<lower=Y_lower_trans[1],upper=Y_upper_trans[1]> pk_mu;
   real<lower=Y_lower_trans[2],upper=Y_upper_trans[2]> fppi_mu;
   real<lower=Y_lower_trans[3],upper=Y_upper_trans[3]> palb_mu;
-  
+
   vector[r] Q;
+  
+  // Initial value of Q is -2..2 and it might go over the limits before the sampling starts
+  // The values are scaled down so that the initial value will work
   
   Q = Q_trans * 0.05;
   
@@ -102,6 +108,12 @@ model {
 
   Q[1] ~ uniform(proposal_limits[1],proposal_limits[2]);
   Q[2] ~ uniform(proposal_limits[3],proposal_limits[4]);
+  Q[3] ~ uniform(proposal_limits[5],proposal_limits[6]);
+
+  //Q[1] ~ normal((proposal_limits[1]+proposal_limits[2])/2,1);
+  //[2] ~ normal((proposal_limits[3]+proposal_limits[4])/2,1);
+
+  pot_prior ~ normal((proposal_limits[1]+proposal_limits[2])/2,1);
 
   // Estimate the queried variables Q
   pk ~ gamma(alpha_point[1], alpha_point[1] / pk_mu);
@@ -115,7 +127,7 @@ generated quantities {
   real concentration[posterior_samples, responses];
   real mu_q0_pred[responses];
   real mu_pred[responses];
-  vector[r] Q_pred;
+  //vector[r] Q_pred;
 
   {
   vector[p] X;  // posteriors for unmodified nutrients
@@ -126,8 +138,8 @@ generated quantities {
     // - gaussian or factor?
     if (X_evidence[i,2] != -1) {
 
-      Q_pred[1] = Q[1];
-      Q_pred[2] = Q[2];
+      //Q_pred[1] = Q[1];
+      //Q_pred[2] = Q[2];
       
       // X_sd_multiplier allows simulating smaller uncertainty of unmodified diet
       if (X_sd_coef > 0)
@@ -150,7 +162,8 @@ generated quantities {
     mu_pred[m] = mu_q0_pred[m];
     
     if (repeat_only != 1) {
-      mu_pred[m] += dot_product(Q_pred, Q_beta_point[m]);
+      //mu_pred[m] += dot_product(Q_pred, Q_beta_point[m]);
+      mu_pred[m] += dot_product(Q, Q_beta_point[m]);
     }
 
     for (po in 1:posterior_samples)
