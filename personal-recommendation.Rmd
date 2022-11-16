@@ -123,6 +123,8 @@ dialysis$potilas <- factor(dialysis$potilas)
 # - same targets
 assumedpredictors <- datadesc_fat_epros[datadesc_fat_epros$Order==100,]
 assumedtargets <- datadesc_fat_epros[datadesc_fat_epros$Order==200,]
+
+datadesc <- datadesc_fat_epros
 ```
 
 ```{r fig.width=10, fig.height=7}
@@ -164,25 +166,6 @@ ggplot(intake.df) +
   theme_bw() +
   scale_x_continuous(breaks=c(0,2500,5800), limits = c(0,5850)) +
   geom_text(aes(x=2500,y=ShortDescription,label = ShortDescription), size=0.2)
-
-```
-
-
-
-```{r}
-
-# TODO: jokaisesta muuttujasta tämän tyyppinen density ridge
-
-pot_plot <- ggplot(intake_reasoning.df, aes(x = pot, y = reorder(person_text, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000), group = person_id)) +
-      geom_density_ridges(aes(rel_min_height=0.01, scale = 1.0), fill = "#00BFC4", color = "#009FA4") +
-      theme_bw() +
-      scale_x_continuous(breaks=c(0,2500,5800), limits = c(0,5850)) +
-      geom_text(stat = "unique", aes(x=2500, label=pot_text), size=2.5) +
-      geom_vline(xintercept = 2500, linetype="solid", color = "black", size=0.2) +
-      labs(x = element_blank(), y = "Patients") +
-      theme(axis.text.x = element_text(size=6),axis.title = element_text(size=9), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
-      ggtitle("Pot. (mg/d)")
-
 
 ```
 
@@ -389,7 +372,7 @@ mse_summary
 
 ```{r recommendation_with_custom_utility, eval=FALSE,echo=FALSE, message=FALSE}
 source("mebn/v3/MEBNv3.r")
-library(igraph)
+library(igraph) 
 library(gridExtra)
 library(dplyr)
   
@@ -401,24 +384,16 @@ graph_dir <- "graphs/mv3_cross_two_levels/"
 
 datadesc <- datadesc_fat_epros
 
-# The conditioned variables are introduced in data description
-datadesc$Conditioned <- 0 
-datadesc[datadesc$Name == "kalium",]$Conditioned <- 1
-datadesc[datadesc$Name == "fosfori",]$Conditioned <- 1
-#datadesc[datadesc$Name == "protepros",]$Conditioned <- 1
-
 # Calculate statistics for normalizing the data
 
 org_stats <- data.frame(name = subset(assumedpredictors$Name, assumedpredictors$Distribution == "Gaussian"))
 org_stats$mean <- sapply(org_stats$name, function(x) mean(dialysis[[x]]))
 org_stats$sd <- sapply(org_stats$name, function(x) sd(dialysis[[x]]))
 
-uniform_proposaldist_limits <- c(((as.numeric(datadesc[datadesc$Name=="kalium",]$Lowerbound) - org_stats[org_stats$name == "kalium",]$mean) / org_stats[org_stats$name == "kalium",]$sd),
-                                 ((as.numeric(datadesc[datadesc$Name=="kalium",]$Upperbound) - org_stats[org_stats$name == "kalium",]$mean) / org_stats[org_stats$name == "kalium",]$sd),
-                                 ((as.numeric(datadesc[datadesc$Name=="fosfori",]$Lowerbound) - org_stats[org_stats$name == "fosfori",]$mean) / org_stats[org_stats$name == "fosfori",]$sd),
-                                 ((as.numeric(datadesc[datadesc$Name=="fosfori",]$Upperbound) - org_stats[org_stats$name == "fosfori",]$mean) / org_stats[org_stats$name == "fosfori",]$sd),
-                                 ((as.numeric(datadesc[datadesc$Name=="protepros",]$Lowerbound) - org_stats[org_stats$name == "protepros",]$mean) / org_stats[org_stats$name == "protepros",]$sd),
-                                 ((as.numeric(datadesc[datadesc$Name=="protepros",]$Upperbound) - org_stats[org_stats$name == "protepros",]$mean) / org_stats[org_stats$name == "protepros",]$sd))
+queried_nodes <- c("kalium","fosfori","protepros")
+
+lowerbounds <- sapply(queried_nodes, function(x) as.numeric(datadesc[datadesc$Name==x,]$Lowerbound) - org_stats[org_stats$name == x,]$mean / org_stats[org_stats$name == x,]$sd)
+upperbounds <- sapply(queried_nodes, function(x) as.numeric(datadesc[datadesc$Name==x,]$Upperbound) - org_stats[org_stats$name == x,]$mean / org_stats[org_stats$name == x,]$sd)
 
 # - collect personal statistics in this data frame
 patient_summary <- data.frame(matrix(ncol = 19, nrow = 0), row.names = NULL)
@@ -448,17 +423,18 @@ colnames(patient_summary) <- c("person_id", "subject_code", "treatment", "accept
   
   intake_model <- mebn.Query(reaction_graph = personal_graph,
                            graph_dir = personal_model_dir,
-                           queried_nodes = c("kalium","fosfori","protepros"),
+                           queried_nodes = queried_nodes,
                            query = recommeded_concentrations,
-                           proposal_limits = uniform_proposaldist_limits,
-                           stan_model_file = "diet/general_intake_recommendation.stan",
+                           proposal_lowerlimits = lowerbounds,
+                           proposal_upperlimits = upperbounds,
+                           stan_model_file = "diet/recommendation_with_utility.stan",
                            conc_lower_limits = as.vector(recommeded_concentrations$lower_limits),
                            conc_upper_limits = as.vector(recommeded_concentrations$upper_limits),
                            beta_point_est = "mean",
                            param_point_est = "mean",
                            X_sd_coef = 0, # coef = 0 forces to use the point estimate
                            X_point_est = "mean",
-                           posterior_samples = 1000,
+                           posterior_samples = 500,
                            repeat_only = 0,
                            condition_in_repeat = 0)
   
@@ -476,11 +452,15 @@ colnames(patient_summary) <- c("person_id", "subject_code", "treatment", "accept
   concs.df <- data.frame(proposal=rep(proposals, each = length(proposal_samples)), pk=as.vector(t(pk)),fppi=as.vector(t(fppi)),palb=as.vector(t(palb)))
   
   # Get the original scale levels of potassium and potassium from each diet proposal
-  pot <- result$Q[,1] * org_stats[org_stats$name == "kalium",]$sd + org_stats[org_stats$name == "kalium",]$mean
-  pho <- result$Q[,2] * org_stats[org_stats$name == "fosfori",]$sd + org_stats[org_stats$name == "fosfori",]$mean
-  prot <- result$Q[,3] * org_stats[org_stats$name == "protepros",]$sd + org_stats[org_stats$name == "protepros",]$mean
+  intake_proposals.df <- data.frame(proposal=proposals)
+                                  
+  for (node_index in 1:length(queried_nodes)) {
+    node_name <- queried_nodes[[node_index]]
+    Q_proposal <- result$Q[,node_index] * org_stats[org_stats$name == node_name,]$sd + org_stats[org_stats$name == node_name,]$mean
+    intake_proposals.df <- cbind(intake_proposals.df, Q_proposal)
+  }
   
-  intake_proposals.df <- data.frame(proposal=proposals, pot=as.vector(pot),pho=as.vector(pho),prot=as.vector(prot))
+  colnames(intake_proposals.df) <- c("proposal", queried_nodes)
   
   #  Calculate probability of each proposal being within the recommended concentration limits.
   #  The calculation is done based on empirical cumulative distribution function (ecdf) for each concentration distribution. 
@@ -626,32 +606,74 @@ saveRDS(patient_summary, paste0("patient_summary/mv3_cross_two_levels/simulation
 ```
 
 ```{r}
+#  for (node_index in 1:length(queried_nodes)) {
+#  for (node_index in 1:1) {
+    
+    node_index <- 1
+    node_name <- queried_nodes[[node_index]]
+    
+    lower_samples <- result$post_lowerlimits[,node_index]
+    upper_samples <- result$post_upperlimits[,node_index]
+    
+    df.low <- data.frame(x = lower_samples)
+    df.low$part <- "lower"
+    df.up <- data.frame(x = upper_samples)
+    df.up$part <- "upper"
+    
+    df <- rbind(df.low, df.up)
+    
+    ggplot(df) + geom_density(aes(x=x, color = part, fill = part, alpha = 0.2))
+    
+#     }
 
-# pot -2.897167 - 3.137178
-# pho -2.74657 - 3.97615
+node_index <- 1
+node_name <- "kalium"
+Q_low <- result$post_lower[,node_index] * org_stats[org_stats$name == node_name,]$sd + org_stats[org_stats$name == node_name,]$mean
+Q_high <- result$post_upper[,node_index] * org_stats[org_stats$name == node_name,]$sd + org_stats[org_stats$name == node_name,]$mean
 
-pot_prior_dens <- result$pot_prior * potassium_org_sd + potassium_org_mean
-pot_prior_dens <- as.data.frame(result$pot_prior)
+mean(Q_high)
 
-pot_prior_dens
-
-pot_prior <- ggplot(pot_prior_dens) + 
-    geom_density(aes(x = pot), fill = "#0000FF", colour = "#0000FF", alpha = 0.2, show.legend = TRUE) +
-    labs(x = "Potassium (mg/d)", y = "") +
-    scale_x_continuous(limits=c(0,5800), breaks=c(0,1000,2000,3000,4000,5000,5800)) +
-    theme_bw() +
-    theme(axis.text.y = element_blank())
-
-pot_post <- ggplot(subset(accepted_intake.df, lowest_conc_prob >= 0.50)) + 
-    geom_density(aes(x = pot), fill = "#0000FF", colour = "#0000FF", alpha = 0.2, show.legend = TRUE) +
-    labs(x = "Potassium (mg/d)", y = "") +
-    scale_x_continuous(limits=c(0,5800), breaks=c(0,1000,2000,3000,4000,5000,5800)) +
-    theme_bw() +
-    theme(axis.text.y = element_blank())
-
-pot_prior
-pot_post
 ```
+
+```{r}
+library(rstan)
+
+opfit <- stan(file="diet/mini_utility.stan", chains = 0)
+
+m <- stan_model(file="diet/mini_utility.stan")
+
+rstan::optimizing(m, data = list(), 
+    check_data = TRUE, sample_file = NULL, 
+    algorithm = "LBFGS",
+    verbose = FALSE, hessian = FALSE, as_vector = TRUE, 
+    draws = 0, constrained = TRUE, importance_resampling = FALSE)   
+
+log_prob(opfit,upars=list(y))
+
+tfun <- function(y,a,b) log_prob(opfit,upars=c(y,a,b))
+tgrfun <- function(y,a,b) grad_log_prob(opfit,upars=c(y,a,b))
+or <- optim(par=c(1,1,1), tfun, tgrfun, method = 'BFGS')
+print(or)
+
+opfit
+
+# return the gradient as an attribute
+tfun2 <- function(y) {
+  g <- grad_log_prob(opfit, y)
+  lp <- attr(g, "log_prob")
+  attr(lp, "gradient") <- g
+  lp
+}
+
+or2 <- nlm(tfun2, 10)
+or2
+
+m <- stan_model(file="diet/mini_utility.stan")
+f <- optimizing(m, hessian = FALSE, verbose = TRUE)
+#f <- sampling(m, cores=4)
+f
+```
+
 
 ```{r recommendation_overview_simulation, eval=FALSE,echo=FALSE, message=FALSE}
 source("mebn/v3/MEBNv3.r")
@@ -911,6 +933,8 @@ library(dplyr)
 # Plot the personal recommendations
 for (person_id in 36:36) {
   
+  person_id <- 36
+  
   subject_code <- levels(dialysis$potilas)[person_id]
 
   personal_info <- head(dialysis[dialysis$potilas == subject_code,],1)
@@ -925,78 +949,80 @@ for (person_id in 36:36) {
   accepted_intake <- paste0("./patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/accepted_intake_",person_id,".rds")
   
   if (file.exists(accepted_intake)) {
-    personal_recommendation <- paste0("./patient_summary/mv3_cross_two_levels/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds")
-    patient_summary <- readRDS(personal_recommendation)
-    
-    info <- patient_summary[patient_summary$person_id==person_id,]
-    min_k <- min(dialysis[dialysis$potilas == info$subject_code,]$kalium)
-    max_k <- max(dialysis[dialysis$potilas == info$subject_code,]$kalium)
-    avg_k <- mean(dialysis[dialysis$potilas == info$subject_code,]$kalium)
-    
-    min_f <- min(dialysis[dialysis$potilas == info$subject_code,]$fosfori)
-    max_f <- max(dialysis[dialysis$potilas == info$subject_code,]$fosfori)
-    avg_f <- mean(dialysis[dialysis$potilas == info$subject_code,]$fosfori)
-    
-    # these are not anymore retrieved at simulation
-    
-    true_concs <- dialysis %>%
-     filter(potilas == subject_code) %>%
-     select(havainto, pk, fppi, palb)
-
-    info$true_pk <- mean(true_concs$pk)
-    info$true_fppi <- mean(true_concs$fppi)
-    info$true_palb <- mean(true_concs$palb)
+    # personal_recommendation <- paste0("./patient_summary/mv3_cross_two_levels/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds")
+    # patient_summary <- readRDS(personal_recommendation)
     
     accepted_intake.df <- readRDS(accepted_intake)
-  
-    if (patient_summary$min_pot != -1)
-    {
-      concs_minmax.df <- readRDS(paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/concs_minmax_",person_id,".rds"))
-    }
-    
-    rec_file <- paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds")
-    personal_recommendation.df <- readRDS(rec_file)
+    concs_minmax.df <- readRDS(paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/concs_minmax_",person_id,".rds"))
+
+    # rec_file <- paste0("patient_summary/mv3_cross_two_levels/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds")
+    # personal_recommendation.df <- readRDS(rec_file)
 
     MyPalette <- c("#2860F6", "#FF7F0E", "#00BFC4", "#D62728", "#AAAAAA")
-
-    accepted_intake.df$limiting_proposal <- sapply(accepted_intake.df$proposal, function(x) ifelse(x %in% concs_minmax.df$proposal,x,1000000))
     
-    lim_proposals <- accepted_intake.df %>% filter(limiting_proposal < 1000000)
-
-    min_pot <- lim_proposals[which.min(lim_proposals$pot),]$proposal
-    max_pot <- lim_proposals[which.max(lim_proposals$pot),]$proposal
-    min_pho <- lim_proposals[which.min(lim_proposals$pho),]$proposal
-    max_pho <- lim_proposals[which.max(lim_proposals$pho),]$proposal
+    # accepted_intake.df$limiting_proposal <- sapply(accepted_intake.df$proposal, function(x) ifelse(x %in% concs_minmax.df$proposal,x,1000000))
+    # 
+    # lim_proposals <- accepted_intake.df %>% filter(limiting_proposal < 1000000)
+    # 
+    # min_pot <- lim_proposals[which.min(lim_proposals$pot),]$proposal
+    # max_pot <- lim_proposals[which.max(lim_proposals$pot),]$proposal
+    # min_pho <- lim_proposals[which.min(lim_proposals$pho),]$proposal
+    # max_pho <- lim_proposals[which.max(lim_proposals$pho),]$proposal
 
     # Order density colors like this
     
-    proposal_order <- data.frame(proposal = c(min_pot, max_pot, min_pho, max_pho))
-    proposal_order$color_order <- c(1,2,3,4)
+    # proposal_order <- data.frame(proposal = c(min_pot, max_pot, min_pho, max_pho))
+    # proposal_order$color_order <- c(1,2,3,4)
     
-    concs_minmax.df <- concs_minmax.df %>% inner_join(proposal_order, by = "proposal")
+    # concs_minmax.df <- concs_minmax.df %>% inner_join(proposal_order, by = "proposal")
     
     # Plotting
+    cond_intake_names <- colnames(accepted_intake.df)[7:ncol(accepted_intake.df)]
+    
+    number_of_cond_intake <- length(cond_intake_names)
+    intake_plots <- myplots <- vector('list', number_of_cond_intake)
+    for (i in 1:number_of_cond_intake)
+    {
+      intake_name <- cond_intake_names[i]
+      intake_symbol <- ensym(intake_name)
+      
+      variable_desc <- datadesc[datadesc$Name == intake_name,]
 
-    pot_plot <- ggplot(subset(accepted_intake.df, lowest_conc_prob >= 0.50)) + 
-        geom_density(aes(x = pot), fill = "#0000FF", colour = "#0000FF", alpha = 0.2, show.legend = TRUE) +
-        labs(x = "Potassium (mg/d)", y = "") +
-        scale_x_continuous(limits=c(0,5800), breaks=c(0,1000,2000,3000,4000,5000,5800)) +
-        theme_bw() +
-        theme(axis.text.y = element_blank())
-
-    pho_plot <- ggplot(subset(accepted_intake.df, lowest_conc_prob >= 0.50)) + 
-        geom_density(aes(x = pho), fill = "#0000FF", colour = "#0000FF", alpha = 0.2, show.legend = TRUE) +
-        labs(x = "Phosphorous (mg/d)", y = "") +
-        scale_x_continuous(limits=c(0,2550), breaks=c(0,500,1000,1500,2000,2550)) +  
+      ScaleMin <- as.numeric(variable_desc$ScaleMin)
+      ScaleMax <- as.numeric(variable_desc$ScaleMax)
+      
+      ScaleBreaks <- seq(from = ScaleMin, to = ScaleMax, by = (ScaleMax - ScaleMin) / 5)
+      
+      intake_plot <- ggplot(subset(accepted_intake.df, lowest_conc_prob >= 0.50)) + 
+        geom_density(aes(x = !!intake_symbol), fill = "#0000FF", colour = "#0000FF", alpha = 0.2, show.legend = FALSE) +
+        labs(x = paste0(variable_desc$Description), y = "") +
+        scale_x_continuous(limits=c(ScaleMin,ScaleMax), breaks=ScaleBreaks) +
         theme_bw() +
         theme(axis.text.y = element_blank())
         
+      intake_plots[[i]] <- intake_plot
+    }
+
+    # pho_plot <- ggplot(subset(accepted_intake.df, lowest_conc_prob >= 0.50)) + 
+    #     geom_density(aes(x = pho), fill = "#0000FF", colour = "#0000FF", alpha = 0.2, show.legend = TRUE) +
+    #     labs(x = "Phosphorous (mg/d)", y = "") +
+    #     scale_x_continuous(limits=c(0,2550), breaks=c(0,500,1000,1500,2000,2550)) +  
+    #     theme_bw() +
+    #     theme(axis.text.y = element_blank())
+    # 
+    # prot_plot <- ggplot(subset(accepted_intake.df, lowest_conc_prob >= 0.50)) + 
+    #     geom_density(aes(x = prot), fill = "#0000FF", colour = "#0000FF", alpha = 0.2, show.legend = TRUE) +
+    #     labs(x = "Protein, E%", y = "") +
+    #     scale_x_continuous(limits=c(0,22.9), breaks=c(0,10,20,25)) +  
+    #     theme_bw() +
+    #     theme(axis.text.y = element_blank())
+        
     # what kind of concentration these intakes result?
     pk_plot <- ggplot(concs_minmax.df, aes(x = pk, group=factor(color_order))) +
-      geom_density(aes(colour=factor(color_order)), show.legend = FALSE) +
+      #geom_density(aes(colour=factor(color_order)), show.legend = FALSE) +
       labs(x = "P-K (mmol/l)", y = NULL, title=element_blank()) +
       geom_vline(xintercept = pk_recommendations, linetype="solid", color = "black", size=0.2) +
-      geom_vline(xintercept = as.numeric(info$true_pk), linetype="dashed", color = "black", size=0.5) +
+      #geom_vline(xintercept = as.numeric(info$true_pk), linetype="dashed", color = "black", size=0.5) +
       scale_x_continuous(breaks=c(pk_recommendations,3,4,5,6), limits=c(pk_recommendations,2,3,4,5,6,7)) +
       scale_colour_manual(values = MyPalette) +
       annotate("rect", xmin=-Inf, xmax=pk_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
@@ -1005,10 +1031,10 @@ for (person_id in 36:36) {
       theme(axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9)) 
     
     fppi_plot <- ggplot(concs_minmax.df, aes(x = fppi, group=factor(color_order))) +
-      geom_density(aes(color=factor(color_order)), show.legend = FALSE) +
+      #geom_density(aes(color=factor(color_order)), show.legend = FALSE) +
       labs(x = "fP-Pi (mmol/l)", y = NULL) +
       geom_vline(xintercept = fppi_recommendations, linetype="solid", color = "black", size=0.2) +
-      geom_vline(xintercept = as.numeric(info$true_fppi), linetype="dashed", color = "black", size=0.5) +
+      #geom_vline(xintercept = as.numeric(info$true_fppi), linetype="dashed", color = "black", size=0.5) +
       scale_x_continuous(breaks=c(fppi_recommendations,c(0,2,2.5)), limits = c(0.7,2.7)) +
       scale_colour_manual(values = MyPalette) +
       annotate("rect", xmin=-Inf, xmax=fppi_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
@@ -1017,11 +1043,11 @@ for (person_id in 36:36) {
       theme(axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9))
     
     palb_plot <- ggplot(concs_minmax.df, aes(x = palb, color=factor(color_order), group=factor(color_order))) +
-      geom_density(aes(color=factor(color_order)), show.legend = FALSE) +
+      #geom_density(aes(color=factor(color_order)), show.legend = FALSE) +
       guides(guide = guide_legend(label.position = "bottom")) +
       labs(x = "P-Alb (g/l)", y = NULL) +
       geom_vline(xintercept = palb_recommendations, linetype="solid", color = "black", size=0.2) +
-      geom_vline(xintercept = as.numeric(info$true_palb), linetype="dashed", color = "black", size=0.5) +
+      #geom_vline(xintercept = as.numeric(info$true_palb), linetype="dashed", color = "black", size=0.5) +
       scale_x_continuous(breaks=c(palb_recommendations,30,40), limits = c(30,47)) +
       scale_colour_manual(values = MyPalette) +
       annotate("rect", xmin=-Inf, xmax=palb_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
@@ -1029,11 +1055,11 @@ for (person_id in 36:36) {
       theme_bw() +
       theme(legend.position="bottom", legend.title = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9))
     
-    lay <- rbind(c(1,1,3),
-                 c(2,2,4),
-                 c(2,2,5))
+    lay <- rbind(c(1,4),
+                 c(2,5),
+                 c(3,6))
     
-    reasoning_plot <- grid.arrange(pot_plot, pho_plot, pk_plot, fppi_plot, palb_plot, layout_matrix = lay, padding=0)
+    reasoning_plot <- grid.arrange(intake_plots[[1]], intake_plots[[2]], intake_plots[[3]], pk_plot, fppi_plot, palb_plot, layout_matrix = lay, padding=0)
     ggsave(paste0("figures/reasoning_plots/reasoning_plots_",person_id,".pdf"), plot = reasoning_plot, width = 6, height = 6, scale = 1)
     
   } # file exists
@@ -1236,7 +1262,9 @@ for (person_id in 36:36) {
     
   } # file exists
 }
+
 ```
+
 
 ```{r reasoning_plot_ridges, fig.height=8.5, fig.width=8, cache=FALSE,echo=FALSE, message=FALSE, warning=FALSE,fig.cap="The figure shows in two left-most panels personal recommendations of potassium and phosphorous intake ($\\hat{Q}^{min}-\\hat{Q}^{max}$) with predictive distributions of $\\hat{Q}$ illustrated in the background. Each row shows a numeric label of the patient and the type of patient's dialysis treatment (HD = hospital hemodialysis, HHD = home hemodialysis, PD = peritoneal dialysis). Personal recommendations are given for those patients whose resulting plasma concentration levels could be predicted in either over 90\\% probability. Three right-most panels show the estimated concentrations that match the recommended intake. In these panels, grey bars indicate the estimated concentration without the effect of potassium and phosphorous intake, $\\mu_{q0}$. Blue bars indicate the range of concentration that is resulted from modifying phosphorous and potassium intake. It is required that these simulated concentrations stay within the personal target ranges denoted with vertical black lines. The dark blue bar indicates satisfying this requirement in $P^{max} > 90\\%$ confidence and $P^{max} > 80\\%$ confidence would be indicated with light blue, but there aren't any in the results. The best exact probabilities $P^{max}_m$ are shown with percentage figures. Red bars indicate that even the best concentration estimation has $P^{max} < 80\\%$ confidence and personal recommendations are not given for these patients. For these patients, the red and blue bars show the whole reachable ranges. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org)."}
 
