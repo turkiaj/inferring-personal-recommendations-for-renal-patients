@@ -20,7 +20,7 @@ knit_hooks$set(plot = function(x, options) {
 fixed_seed <- 678
 
 # Load common MEBN package
-source("mebn/v3/MEBNv3.r")
+source("mebn/v2/MEBNv2.r")
 
 ```
 
@@ -101,32 +101,6 @@ assumedpredictors <- dialysis_datadesc[dialysis_datadesc$Order==100,]
 assumedtargets <- dialysis_datadesc[dialysis_datadesc$Order==200,]
 ```
 
-```{r fig.width=10, fig.height=7}
-source("mebn/v3/MEBNv3.r")
-
-library(igraph)
-library(ggraph)
-
-initial_graph <- mebn.fully_connected_bipartite_graph(dialysis_datadesc)
-
-bipa_layout <- layout_as_bipartite(initial_graph, types = V(initial_graph)$type == "100", hgap = 1, vgap = 1)
-
-# - flip layout sideways, from left to right
-bipa_layout <- cbind(bipa_layout[,2], bipa_layout[,1])
-V(initial_graph)[V(initial_graph)$type == "100"]$label.degree = pi # left side
-V(initial_graph)[V(initial_graph)$type == "200"]$label.degree = 0 # right side
-
-ggraph(initial_graph, layout = bipa_layout) +
-  geom_edge_link(colour = "#AAAAAA") +
-  geom_node_label(nudge_x = 0.05, aes(label = description, colour = "#000000")) +
-  theme_bw() + 
-  theme(axis.text.y = element_blank(), axis.text.x = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-  labs(x = element_blank(), y = element_blank())
-
-```
-
-https://cran.r-project.org/web/packages/ggparty/vignettes/ggparty-graphic-partying.html
-
 ```{r graph_with_gamma_qr_mvcross_two_levels, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
 dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
 
@@ -166,8 +140,9 @@ p <- mebn.multivariate_dens_overlays("models/BLMM_gamma_mv_cross/two_levels", as
 #ggsave("figures/ppc_mv3_cross.pdf", plot = p, width = 4, height = 4)
 p
 ```
+
 ```{r extract_personal_generative_models, eval=FALSE, echo=FALSE}
-source("mebn/v3/MEBNv3.r")
+source("mebn/v2/MEBNv2.r")
 
 # Extract generative models for patients with data from personal grouping
 

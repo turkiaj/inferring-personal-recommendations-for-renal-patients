@@ -41,7 +41,7 @@ knit_hooks$set(plot = function(x, options) {
 fixed_seed <- 678
 
 # Load common MEBN package
-source("mebn/v3/MEBNv3.r")
+source("mebn/v2/MEBNv2.r")
 
 # Online version (TRUE) uses color images while (FALSE) renders exact figures for the article 
 RenderArticleFigures <- FALSE
@@ -327,7 +327,7 @@ For comparison, we estimate multivariate systems with and without cross-model co
 
 ```{r model_separate_univariate_preparation, echo=FALSE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
 library(rstan)
-source("mebn/v3/MEBNv3.r")
+source("mebn/v2/MEBNv2.r")
 
 rstan_options (auto_write=TRUE)
 options (mc.cores=parallel::detectCores ()) 
@@ -606,7 +606,7 @@ Here we evaluate the model's ability to repeat the measured observations with no
 
 
 ```{r extract_personal_generative_models, eval=FALSE, echo=FALSE}
-source("mebn/v3/MEBNv3.r")
+source("mebn/v2/MEBNv2.r")
 
 # Extract generative models for patients with data from personal grouping
 
@@ -685,7 +685,7 @@ for (person_id in 1:37) {
 
 ```{r simulated_MSE, eval=FALSE, echo=FALSE}
 library(igraph)
-source("mebn/v3/MEBNv3.r")
+source("mebn/v2/MEBNv2.r")
 
 potassium_org_mean <- mean(dialysis$kalium) # 2755
 potassium_org_sd <- sd(dialysis$kalium) # 949
@@ -751,7 +751,7 @@ for (model_dir in model_dir_candidates) {
    
     pk <- repeats$concentration[,,1]
     fppi <- repeats$concentration[,,2]
-    #palb <- repeats$concentration[,,3]
+    palb <- repeats$concentration[,,3]
      
     true_concs <- dialysis %>%
          filter(potilas == subject_code) %>%
@@ -811,10 +811,8 @@ kable(mse_table, "latex", escape = T, booktabs = T, row.names = FALSE, digits = 
   col.names = c("Reaction model", "P-K", "fP-Pi", "P-Alb", "average error")) %>%
   add_header_above(c(" " = 1, "NRMSE" = 4), escape = F) %>%
   kable_styling(latex_options = "HOLD_position") %>%
-  kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) 
-
-#%>%
-#  row_spec(0,bold=TRUE) %>% save_kable(file = "tables/model_nrmse_comparison.pdf", keep_tex = TRUE)
+  kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) %>%
+  row_spec(0,bold=TRUE) %>% save_kable(file = "tables/model_nrmse_comparison.pdf", keep_tex = TRUE)
 
 ```
 
@@ -823,8 +821,13 @@ kable(mse_table, "latex", escape = T, booktabs = T, row.names = FALSE, digits = 
 dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
 pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
 
+pk_fppi_palb_targets[pk_fppi_palb_targets$Name == "pk",]$ScaleMax <- 7.5
+pk_fppi_palb_targets[pk_fppi_palb_targets$Name == "fppi",]$ScaleMax <- 5.0
+pk_fppi_palb_targets[pk_fppi_palb_targets$Name == "palb",]$ScaleMax <- 50
+pk_fppi_palb_targets
+
 p <- mebn.multivariate_dens_overlays("models/BLMM_gamma_mv_cross/two_levels", pk_fppi_palb_targets, dialysis_imputed) 
-#ggsave("figures/ppc_mv3_cross.pdf", plot = p, width = 4, height = 4)
+ggsave("figures/ppc_mv3_cross.pdf", plot = p, width = 4, height = 4)
 p
 ```
 
