@@ -464,7 +464,7 @@ Then we predict missing values with these data imputing models
 
 ```{r, palb_imputation1, echo=FALSE, eval=FALSE}
 library(igraph)
-source("mebn/v3/MEBNv3.r")
+source("mebn/v2/MEBNv2.r")
 
 # this vector is imputed with predicted values
 original_palb <- dialysis$palb
@@ -601,9 +601,6 @@ write.graph(dialdiet_gamma_mv3_two_level,
 ```
 
 # Model analysis
-
-Here we evaluate the model's ability to repeat the measured observations with normalized root mean square error (NRMSE) and compare how adding the dialysis treatment as an explicit hierarchical layer in the model affects this error. We also asses the model's performance with visual posterior predictive check by comparing samples from the model with measured values. This would give away possible bias in the model.
-
 
 ```{r extract_personal_generative_models, eval=FALSE, echo=FALSE}
 source("mebn/v2/MEBNv2.r")
@@ -816,7 +813,7 @@ kable(mse_table, "latex", escape = T, booktabs = T, row.names = FALSE, digits = 
 
 ```
 
-```{r dialysis_gamma_mv_cross_2levels_ppc, echo=FALSE, message=FALSE, warning=FALSE, eval=TRUE, cache=TRUE, fig.cap="Posterior predictive check of the model where three concentrations and their parameters are stacked into one univariate model for estimating cross-model correlations."}
+```{r dialysis_gamma_mv_cross_2levels_ppc, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE, cache=TRUE, fig.cap="Posterior predictive check of the model where three concentrations and their parameters are stacked into one univariate model for estimating cross-model correlations."}
 #source("mebn/v3/MEBNv3.r")
 dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
 pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
@@ -824,11 +821,9 @@ pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','
 pk_fppi_palb_targets[pk_fppi_palb_targets$Name == "pk",]$ScaleMax <- 7.5
 pk_fppi_palb_targets[pk_fppi_palb_targets$Name == "fppi",]$ScaleMax <- 5.0
 pk_fppi_palb_targets[pk_fppi_palb_targets$Name == "palb",]$ScaleMax <- 50
-pk_fppi_palb_targets
 
 p <- mebn.multivariate_dens_overlays("models/BLMM_gamma_mv_cross/two_levels", pk_fppi_palb_targets, dialysis_imputed) 
 ggsave("figures/ppc_mv3_cross.pdf", plot = p, width = 4, height = 4)
-p
 ```
 
 ```{r, eval=FALSE, typical_effects_figure, fig.cap="This visualization shows mean of posterior for typical coefficients as weight of the connection between blood concentrations and nutrients at diet affecting it. The figure is plotted with iGraph package for R language (v 1.2.6, https://igraph.org/r).", fig.height = 4, fig.width=5, echo=FALSE, fig.align = "left", message=FALSE, warning=FALSE, cache=FALSE}
@@ -840,7 +835,7 @@ dialysis_mv3cross_treatment <- read_graph("graphs/dialysis_gamma_two_level_group
 graph_layout <- mebn.plot_typical_effects(dialysis_mv3cross_treatment, 20, graph_layout = NULL)
 ```
 
-Then we look into the estimated correlation matrices of effects. The model estimates how much the effects of nutrients vary between different types of dialysis treatment and further how the effects vary personally within a treatment. These correlation plots show how the effects are correlated. 
+Here we look into the estimated correlation matrices of effects. The model estimates how much the effects of nutrients vary between different types of dialysis treatment and further how the effects vary personally within a treatment. These correlation plots show how the effects are correlated. 
 
 ```{r, subject_effect_correlations, eval=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
 library(rstan)
@@ -1434,16 +1429,49 @@ effect_summary <- readRDS("patient_summary/two_level_effect_summary.rds")
 # Most varying effect between patients regardless the treatment
 
 effect_summary$sigma_b <- as.numeric(effect_summary$sigma_b)
+effect_summary$sigma_b_lCI <- as.numeric(effect_summary$sigma_b_lCI)
+effect_summary$sigma_b_uCI <- as.numeric(effect_summary$sigma_b_uCI)
+effect_summary$sigma_g <- as.numeric(effect_summary$sigma_g)
+effect_summary$sigma_g_lCI <- as.numeric(effect_summary$sigma_g_lCI)
+effect_summary$sigma_g_uCI <- as.numeric(effect_summary$sigma_g_uCI)
 effect_summary$personal_effect <- as.numeric(effect_summary$personal_effect)
+
+# top_effect_summary <- effect_summary %>%
+#   group_by(effect) %>% 
+#   mutate(personal_max = personal_effect[which.max(personal_effect)]) %>% 
+#   mutate(personal_min = personal_effect[which.min(personal_effect)]) %>% 
+#   mutate(personal_variation = personal_max - personal_min) %>% 
+#   ungroup() %>%
+#   arrange(desc(personal_variation)) %>%
+#   select(effect, personal_min, personal_max, personal_variation) %>%
+#   distinct()
+# 
+# top_effect_summary <- effect_summary %>%
+#   group_by(effect) %>% 
+#   mutate(personal_max = personal_effect[which.max(personal_effect)],
+#          personal_min = personal_effect[which.min(personal_effect)],
+#          lCI_max = personal_effect_lCI[which.max(personal_effect)],
+#          uCI_max = personal_effect_uCI[which.max(personal_effect)],
+#          lCI_min = personal_effect_lCI[which.min(personal_effect)],
+#          uCI_min = personal_effect_uCI[which.min(personal_effect)]) %>% 
+#   mutate(personal_variation = personal_max - personal_min) %>% 
+#   ungroup() %>%
+#   arrange(desc(personal_variation)) %>%
+#   select(effect, personal_min, lCI_min, uCI_min, personal_max, lCI_max, uCI_max, personal_variation) %>%
+#   distinct()
 
 top_effect_summary <- effect_summary %>%
   group_by(effect) %>% 
-  mutate(personal_max = personal_effect[which.max(personal_effect)]) %>% 
-  mutate(personal_min = personal_effect[which.min(personal_effect)]) %>% 
+  mutate(personal_max = personal_effect[which.max(personal_effect)],
+         personal_min = personal_effect[which.min(personal_effect)],
+         lCI_max = personal_effect_lCI[which.max(personal_effect)],
+         uCI_max = personal_effect_uCI[which.max(personal_effect)],
+         lCI_min = personal_effect_lCI[which.min(personal_effect)],
+         uCI_min = personal_effect_uCI[which.min(personal_effect)],
+         personal_abs = max(abs(personal_min), abs(personal_max))) %>% 
   mutate(personal_variation = personal_max - personal_min) %>% 
-  ungroup() %>%
-  arrange(desc(personal_variation)) %>%
-  select(effect, personal_min, personal_max,personal_variation) %>%
+  arrange(desc(personal_abs), desc(personal_variation)) %>%
+  select(effect, personal_min, personal_max, lCI_min, uCI_min, lCI_max, uCI_max, personal_abs, personal_variation) %>%
   distinct()
 
 # - pretty name lookup
@@ -1456,17 +1484,23 @@ effect_desc.df$concentration <- all_descs$target
 colnames(effect_desc.df) <- c("effect", "effect_description", "nutrient", "concentration")
 
 top_effect_summary <- top_effect_summary %>% inner_join(effect_desc.df, by = "effect")
+#top_effect_summary <- top_effect_summary %>% inner_join(effect_summary, by = "effect")
+d <- 2
 
+top_effect_summary$personal_min <- paste0(round(as.numeric(top_effect_summary$personal_min),d), " [", round(as.numeric(top_effect_summary$lCI_min), d), "; ", round(as.numeric(top_effect_summary$uCI_min), d), "]")
+
+top_effect_summary$personal_max <- paste0(round(as.numeric(top_effect_summary$personal_max),d), " [", round(as.numeric(top_effect_summary$lCI_max), d), "; ", round(as.numeric(top_effect_summary$uCI_max), d), "]")
 ```
 
-\newpage
-Supplementary Table S5: Table shows 20 effects that have highest variation between patients by comparing minimum and maximum of expected effect strength.
 ```{r top_effect_summary_table,echo=FALSE, cache=FALSE}
-kable(top_effect_summary[1:20, c(5,2,3)], "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect", "Min", "Max")) %>%
+# Table shows 20 effects that have highest variation between patients by comparing minimum and maximum of expected effect strength.
+
+kable(top_effect_summary[1:20, c(10,2,3)], "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect", "Sample min", "Sample max")) %>%
     kable_styling(latex_options = "HOLD_position") %>%
     kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) %>%
     add_header_above(c(" " = 1, "Expected personal effect strength" = 2), escape = F) %>%
-    row_spec(0,bold=TRUE)
+    row_spec(0,bold=TRUE) %>%
+    save_kable(file = "tables/top_effect_summary_table.pdf", keep_tex = TRUE)
 ```
 
 ```{r recommendation_overview_simulation, eval=FALSE,echo=FALSE, message=FALSE}
