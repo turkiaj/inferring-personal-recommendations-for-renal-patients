@@ -1,0 +1,209 @@
+---
+output: html_document
+date: "2023-03-24"
+---
+
+## Cross validation
+
+```{r setup, include=FALSE}
+library(knitr)
+library(kableExtra) # for HTML and Latex tables
+
+knitr::opts_chunk$set(echo = TRUE, fig.align="center", fig.pos = 'H')
+
+# this allows using tikz rendering for plots with "dev=tikz"
+knit_hooks$set(plot = function(x, options) {
+  if ('tikz' %in% options$dev && !options$external) {
+    hook_plot_tex(x, options)
+  } else hook_plot_md(x, options)
+})
+
+# Fix seed for random number generator for getting consistent results in kmeans etc.
+fixed_seed <- 678
+
+# Load common MEBN package
+source("mebn/v2/MEBNv2.r")
+
+```
+
+# Dialysis patient data
+
+```{r data_loading, echo=FALSE, message=FALSE, warning=FALSE}
+library(lubridate)
+library(dplyr)
+library(tidyr)
+
+# Read the data description
+datadesc_fat_epros <- read.csv(file="data/DIALYSIS_data_description_fat_epros.csv", header = TRUE, sep = ";")
+
+# Read the actual data matching the description
+dialysis <- read.csv(file="data/DIALYSIS.csv", sep=";", dec=",")
+
+# Define factors
+dialysis$potilas <- factor(dialysis$potilas)
+dialysis$nesterajoitus <- factor(dialysis$nesterajoitus)
+dialysis$verenpainelaakitys <- factor(dialysis$verenpainelaakitys)
+dialysis$verenrasvojen_laakitys <- factor(dialysis$verenrasvojenlaakitys)
+dialysis$mielialalaakitys <- factor(dialysis$mielialalaakitys)
+dialysis$fosforinsitoja <- factor(dialysis$fosforinsitoja)
+dialysis$kaliuminsitoja <- factor(dialysis$kaliuminsitoja)
+dialysis$anemian_hoito <- factor(dialysis$anemianhoito)
+dialysis$diabeteslaakitys <- factor(dialysis$diabeteslaakitys)
+dialysis$antibiootti <- factor(dialysis$antibiootti)
+dialysis$marevan <- factor(dialysis$marevan)
+dialysis$nesteenpoisto <- factor(dialysis$nesteenpoisto)
+dialysis$ummetuslaake <- factor(dialysis$ummetuslaake)
+dialysis$verenohennus <- factor(dialysis$verenohennus)
+dialysis$akt_dvit <- factor(dialysis$aktdvit)
+dialysis$renavit <- factor(dialysis$renavit)
+dialysis$cad <- factor(dialysis$cad)
+
+# Calculate missing E% for fats 
+# https://fineli.fi/fineli/fi/ravintotekijat/2331
+
+dialysis$mufaepros <- dialysis$mufa * 9 / dialysis$energiakcal * 100 # Rasvan energiakerroin on 37 kJ/g (9 kcal/g)
+dialysis$pufaepros <- dialysis$pufa * 9 / dialysis$energiakcal * 100 # Rasvan energiakerroin on 37 kJ/g (9 kcal/g)
+#dialysis$safaepros2 <- dialysis$safa * 9 / dialysis$energiakcal * 100 # Rasvan energiakerroin on 37 kJ/g (9 kcal/g)
+
+# Add these new E% features as predictors
+mufa_e <- datadesc_fat_epros[datadesc_fat_epros$Name=="mufa",]
+mufa_e$Name <- "mufaepros"
+mufa_e$Unit <- "E%"
+mufa_e$Description <- "Monounsaturated Fatty Acids, E%"
+mufa_e$Descriptionfin <- "Mufa E%"
+datadesc_fat_epros <- rbind(datadesc_fat_epros, mufa_e)
+
+pufa_e <- datadesc_fat_epros[datadesc_fat_epros$Name=="pufa",]
+pufa_e$Name <- "pufaepros"
+pufa_e$Unit <- "E%"
+pufa_e$Description <- "Polyunsaturated Fatty Acids, E%"
+pufa_e$Descriptionfin <- "Pufa E%"
+datadesc_fat_epros <- rbind(datadesc_fat_epros, pufa_e)
+
+# Remove g/d features from predictors
+datadesc_fat_epros[datadesc_fat_epros$Name=="mufa",]$Order <- 0
+datadesc_fat_epros[datadesc_fat_epros$Name=="pufa",]$Order <- 0
+
+# gender: female = 1, male = 0
+dialysis$sukupuoli <- factor(ifelse(dialysis$sukupuoli == "nainen", 1, 0))
+
+# Days between laboratory test and food record interview
+dialysis$responsedays <- difftime(as.Date(dialysis$labraaika, '%d.%m.%Y'), as.Date(dialysis$ravhaastaika, '%d.%m.%Y'), units = c("days"))
+
+responsedays_desc <- datadesc_fat_epros[datadesc_fat_epros$Name=="ika",]
+responsedays_desc$Order <- 0 # OMITTED !!
+responsedays_desc$Distribution <- "Integer"  # Filter this out from normalization etc.
+responsedays_desc$Name <- "responsedays"
+responsedays_desc$Unit <- "days"
+responsedays_desc$Description <- "responsetime"
+responsedays_desc$Descriptionfin <- "vasteaika"
+datadesc_fat_epros <- rbind(datadesc_fat_epros, responsedays_desc)
+
+# important: dataset is ordered by successive patients and observations so that estimation works correctly
+dialysis <- dialysis[order(dialysis$potilas, dialysis$havainto),]
+
+# remove patients with one observation only
+
+# dialysis
+patients_with_two_obs <- dialysis %>% 
+  group_by(potilas) %>% 
+  summarise(havainto_sum = sum(havainto)) %>%
+  filter(havainto_sum == 3) %>%
+  select(potilas) %>%
+  unlist() %>% as.vector()
+
+dialysis <- dialysis[dialysis$potilas %in% patients_with_two_obs,]
+
+# - reset patient levels
+dialysis$potilas <- factor(dialysis$potilas)
+
+# Define how to iterate through the graph
+# - same targets
+assumedtargets <- datadesc_fat_epros[datadesc_fat_epros$Order==200,]
+```
+
+```{r two_sets_of_predictors, echo=FALSE, message=FALSE}
+# - different sets of predictors
+
+## FAT EPROS
+assumedpredictors_fat_epros <- datadesc_fat_epros[datadesc_fat_epros$Order==100,]
+
+# Ordering for table
+assumedpredictors_fat_epros <- assumedpredictors_fat_epros[order(assumedpredictors_fat_epros$Unit, assumedpredictors_fat_epros$Description),]
+
+gaussian_preds <- as.vector(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian" | assumedpredictors_fat_epros$Distribution == "LogNormal",]$Name)
+show_decimals <- as.vector(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian" | assumedpredictors_fat_epros$Distribution == "LogNormal",]$Decimals)
+
+pred_table <- as.data.frame(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian" | assumedpredictors_fat_epros$Distribution == "LogNormal",]$Description, row.names = NULL)
+
+range_mat <- paste0(round(apply(t(dialysis[gaussian_preds]), 1, function(x) mean(x)),show_decimals), " (",round(apply(t(dialysis[gaussian_preds]), 1, function(x) min(x)),show_decimals)," - ",round(apply(t(dialysis[gaussian_preds]), 1, function(x) max(x)),show_decimals),") ", as.vector(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian",]$Unit))
+
+prior_range <- paste0(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian",]$Lowerbound, " - ", assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian",]$Upperbound, " ", assumedpredictors_fat_epros[assumedpredictors_fat_epros$Distribution == "Gaussian",]$Unit)
+
+pred_table_fat_epros <- cbind(pred_table, range_mat)
+colnames(pred_table_fat_epros) <- c("Nutrient", "Sample avg. (min-max)")
+
+```
+
+```{r model_separate_univariate_preparation, echo=FALSE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+library(rstan)
+source("mebn/v2/MEBNv2.r")
+
+rstan_options (auto_write=TRUE)
+options (mc.cores=parallel::detectCores ()) 
+```
+
+
+```{r graph_with_gamma_qr_mvcross_two_levels, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
+
+initial_graph <- mebn.fully_connected_bipartite_graph(datadesc_fat_epros)
+
+dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
+
+# add the dialysis treatment type as a grouping factor
+dialysis_imputed$hoitoryhma <- as.factor(dialysis_imputed$hoitomuoto)
+
+# and sort the data by treatment/patient/observation
+dialysis_imputed <- dialysis_imputed[order(dialysis_imputed$hoitoryhma, 
+                                           dialysis_imputed$potilas, dialysis_imputed$havainto),]
+
+# 10-fold
+number_of_folds <- 10
+patients <- as.numeric(levels(dialysis_imputed$potilas))
+patient_folds <- split(patients, cut(seq_along(patients),number_of_folds,labels = FALSE))
+
+# number of fold
+f <- 1
+
+fold <- patient_folds[[f]]
+
+# Data to holdout belonging to patients in the fold
+holdout_index <- as.vector(as.numeric(dialysis_imputed$potilas %in% fold))
+
+# Change this path to match your environment
+cvmodelpath <- "models/BLMM_gamma_mv_cross"
+fold_title <- paste0(f,"_",paste0(fold, collapse = "_"))
+cvdir <- paste0(cvmodelpath, "/cvmodels/", fold_title)
+
+if (!dir.exists(cvdir))
+{
+  dir.create(cvdir)
+  
+  dialdiet_gamma_mv3_two_level <- mebn.bipartite_two_level_multivariate(
+                                     reaction_graph = initial_graph, 
+                                     inputdata = dialysis_imputed,
+                                     targetdata = holdout_index,
+                                     predictor_columns = assumedpredictors_fat_epros, 
+                                     assumed_targets = pk_fppi_palb_targets, 
+                                     group_column = "hoitoryhma",
+                                     subject_column = "potilas",
+                                     local_estimation = mebn.two_level_multivariate_sampling,
+                                     local_model_cache = cvdir,
+                                     stan_model_file = 
+                                       "mebn/v2/BLMM_gamma_two_level_grouping.stan",
+                                     normalize_values = TRUE)
+}
+
+```
+
