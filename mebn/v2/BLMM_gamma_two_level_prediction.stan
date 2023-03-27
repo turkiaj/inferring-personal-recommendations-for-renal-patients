@@ -17,17 +17,18 @@ data {
   vector[v] beta_Intercept;       // common intercept 
   vector[v*(p-1)] beta_stack;     // poulation-level effects (fixed effects)
 
-  cholesky_factor_corr[v*k] L_g;           // Cholesky factor of group ranef corr matrix
-  vector<lower=0>[v*k] stacked_sigma_b_g;  // group-level random-effect standard deviations
-
-  cholesky_factor_corr[v*k] L_s;           // Cholesky factor of subject ranef corr matrix
-  vector<lower=0>[v*k] stacked_sigma_b_s;  // subject-level random-effect standard deviations
-
   vector[v*k] g_stack[n_g];       // group level effects stacked in one vector from each response
-                                  // NOTE: group effects are not estimated in personal predictions
+
+  // NOTE: group effects are not estimated in personal predictions
+  // they are assumed fixed and only personal deviations from group/treatment means are predicted 
+  
+  //matrix[v*k,v*k] L_g;           // Cholesky factor of group ranef corr matrix
+  //vector<lower=0>[v*k] stacked_sigma_b_g;  // group-level random-effect standard deviations
+
+  matrix[v*k,v*k] L_s;           // Cholesky factor of subject ranef corr matrix
+  vector<lower=0>[v*k] stacked_sigma_b_s;  // subject-level random-effect standard deviations
                     
   vector[v] g_alpha;              // alpha (shape) parameter of each v gamma distribution
-
 } 
 
 transformed data { 
@@ -72,10 +73,8 @@ transformed data {
 }
 
 parameters { 
-
   // Only subject-level effects are predicted
   vector[v*k] z_s[n_s];            // unscaled subject-level effects
-
 }
 
 transformed parameters {
@@ -88,10 +87,7 @@ transformed parameters {
   // local scope for Lambdas
   {
     // diag(sigma_b) * L
-    matrix[v*k, v*k] Lambda_g;       // Tau * Cholesky decomposition
-    matrix[v*k, v*k] Lambda_s;       // for groups and subjects
-    
-    Lambda_g = diag_pre_multiply(stacked_sigma_b_g, L_g); 
+    matrix[v*k, v*k] Lambda_s;       // Tau * Cholesky decomposition subjects
     Lambda_s = diag_pre_multiply(stacked_sigma_b_s, L_s); 
   
     for(j in 1:n_s) 
@@ -109,6 +105,8 @@ model {
     vector[v*N] mu;             // expected value 
     vector[v*N] g_beta;         // beta (rate) of Gamma distribution
     int vn = 1;
+    
+    // b_stack is only parameter, other variables are fixed data
     
     mu = I * beta_Intercept + linear_transformation + XM_t * beta_stack;
     
@@ -133,17 +131,18 @@ model {
 generated quantities {
 
   vector[N] Y_rep[v];                 // repeated response
-  vector[p-1] beta[v];                // poulation-level effects (fixed effects)
-  vector[k] g[n_g,v];
   vector[k] b[n_s,v];
-  vector[k] group_effects;
-  vector[k-1] group_effect[n_g,v];
-  real group_intercept[n_g,v];
   vector[k-1] personal_effect[n_s,v];
   real personal_intercept[n_s,v];
 
   // Unstack Y_rep to separate columns
   {
+    vector[p-1] beta[v];                // poulation-level effects (fixed effects)
+    vector[k] g[n_g,v];
+    vector[k] group_effects;
+    vector[k-1] group_effect[n_g,v];
+    real group_intercept[n_g,v];
+
     real Y_rep_stack[v*N];       // stacked training responses from all responses
     vector[v*N] mu_hat;          // expected value 
     vector[v*N] g_beta_hat;      // beta (rate) of Gamma distribution

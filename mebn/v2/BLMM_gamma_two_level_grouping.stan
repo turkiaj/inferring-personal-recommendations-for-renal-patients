@@ -184,8 +184,8 @@ model {
 generated quantities {
 
   vector[v*(p-1)] beta_stack;         // poulation-level effects (fixed effects)
-  corr_matrix[v*k] C_g;               // correlation matrix of group level effects 
-  corr_matrix[v*k] C_s;               // correlation matrix of subject level effects 
+  //corr_matrix[v*k] C_g;               // correlation matrix of group level effects 
+  //corr_matrix[v*k] C_s;               // correlation matrix of subject level effects 
   vector[N-NH] Y_rep[v];              // repeated response
   vector[p-1] beta[v];                // poulation-level effects (fixed effects)
   vector[k] g[n_g,v];
@@ -201,8 +201,8 @@ generated quantities {
   // vector[N-NH] log_lik[v];       // log-likelihood for LOO
 
   // Correlation matrix of random-effects, C = L'L
-  C_g = multiply_lower_tri_self_transpose(L_g);
-  C_s = multiply_lower_tri_self_transpose(L_s);
+  //C_g = multiply_lower_tri_self_transpose(L_g);
+  //C_s = multiply_lower_tri_self_transpose(L_s);
 
   // Posterior predictive distribution for model checking
 

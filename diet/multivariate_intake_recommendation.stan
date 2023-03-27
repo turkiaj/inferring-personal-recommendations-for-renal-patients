@@ -122,9 +122,6 @@ model {
   Q[1] ~ uniform(proposal_limits[1],proposal_limits[2]);
   Q[2] ~ uniform(proposal_limits[3],proposal_limits[4]);
 
-  //Q[1] ~ lognormal(-0.244136,10);
-  //Q[2] ~ lognormal(0.680699,10);
-  
   // Estimate the queried variables Q
   pk ~ gamma(alpha_point[1], alpha_point[1] / pk_mu);
   fppi ~ gamma(alpha_point[2], alpha_point[2] / fppi_mu);
