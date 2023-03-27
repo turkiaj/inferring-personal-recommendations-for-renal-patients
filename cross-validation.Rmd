@@ -142,7 +142,6 @@ prior_range <- paste0(assumedpredictors_fat_epros[assumedpredictors_fat_epros$Di
 
 pred_table_fat_epros <- cbind(pred_table, range_mat)
 colnames(pred_table_fat_epros) <- c("Nutrient", "Sample avg. (min-max)")
-
 ```
 
 ```{r model_separate_univariate_preparation, echo=FALSE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
@@ -234,8 +233,11 @@ fold_title <- paste0(f,"_",paste0(fold, collapse = "_"))
 # - latent parameters from this model
 latent_parameter_modeldir <- paste0("models/BLMM_gamma_mv_cross/cvmodels/", fold_title)
 
+latent_parameter_modeldir <- paste0("models/BLMM_gamma_mv_cross/cvmodels/1_382_480_885_1184")
+
 # - output personal generative models (graphml + rv samples) in this dir
 graph_dir <- "graphs/mv3_cross_two_levels_cv/"
+graph_dir <- "graphs/mv3_cross_two_levels_cv_insample/"
 
 # Loop through patients and produce the models
 
@@ -247,6 +249,8 @@ dialysis$hoitoryhma <- as.factor(dialysis$hoitomuoto)
 #for (person_id in 1:length(patients)) {
 
 for (person_id in which(patients %in% fold)) {
+  
+  person_id <- 5
   
   # - initial graph structure
   initial_graph <- mebn.fully_connected_bipartite_graph(datadesc)
@@ -308,7 +312,7 @@ for (model_dir in graph_dir_candidates) {
 
   graph_dir <- paste0("graphs/",model_dir,"/")
 
-  for (person_id in 1:4) {
+  for (person_id in 1:5) {
   
     print(paste0("Simulating patient ", person_id))
   
@@ -364,10 +368,10 @@ for (model_dir in graph_dir_candidates) {
 
 colnames(mse_summary) <- c("subject", "reaction_model", "pk_nrmse", "fppi_nrmse", "palb_nrmse")
 
-saveRDS(mse_summary, "model_evaluation/NRMSE_comparison_mv_cv_models.rds")
+saveRDS(mse_summary, "model_evaluation/NRMSE_comparison_mv_cv_models_5.rds")
 
-write.csv2(mse_summary, file="model_evaluation/NRMSE_comparison_mv_cv_models.csv", row.names = FALSE)
-
+write.csv2(mse_summary, file="model_evaluation/NRMSE_comparison_mv_cv_models_5.csv", row.names = FALSE)
+mse_summary
 ```
 
 ```{r}
@@ -393,6 +397,9 @@ error_analysis.df <- mv_model %>%
 error_analysis.df$avg_error <- rowMeans(cbind(error_analysis.df$pk_error, error_analysis.df$fppi_error, error_analysis.df$palb_error))
 
 reaction_rms <- data.frame(matrix(ncol = 5, nrow = 0), row.names = NULL)
+
+# Ennustevirhe ei selity alla olevalla tavalla
+# Hypoteesi: virhe kasvaa jos holdout-potilas reagoi eri tavalla kuin malli ennustaa
 
 for (subject_code in error_analysis.df$subject) {
   
@@ -432,6 +439,71 @@ ggplot(plot.df) +
   geom_point(aes(x = palb_error, y = palb_reaction_distance), color = "blue") 
 
 mse_summary
+
+```
+```{r prediction}
+library(rstan)
+
+stan_model_file <- "mebn/v2/BLMM_gamma_two_level_prediction.stan"
+
+# reponses
+pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
+assumedtargets <- pk_fppi_palb_targets
+
+# data
+dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
+
+# add the dialysis treatment type as a grouping factor
+dialysis_imputed$hoitoryhma <- as.factor(dialysis_imputed$hoitomuoto)
+
+# and sort the data by treatment/patient/observation
+dialysis_imputed <- dialysis_imputed[order(dialysis_imputed$hoitoryhma, 
+                                           dialysis_imputed$potilas, dialysis_imputed$havainto),]
+
+# pick predicted fold
+number_of_folds <- 10
+patients <- as.numeric(levels(dialysis_imputed$potilas))
+patient_folds <- split(patients, cut(seq_along(patients),number_of_folds,labels = FALSE))
+
+# number of fold
+f <- 1
+fold <- patient_folds[[f]]
+
+inputdata <- dialysis_imputed[dialysis_imputed$potilas %in% fold,]
+predictor_columns <- assumedpredictors_fat_epros
+target_columns <- pk_fppi_palb_targets
+group_column <- "hoitoryhma"
+subject_column <- "potilas"
+targetdata <- NULL
+normalize_values <- TRUE
+reg_params <- NULL
+
+# prepare input data
+stanDat <- mebn.set_mv_two_level_model_parameters(predictor_columns, target_columns, group_column, subject_column, inputdata, targetdata, normalize_values, reg_params)
+stanDat$n_s <- length(fold)
+
+# get prediction info
+localfit <- readRDS("models/BLMM_gamma_mv_cross/two_levels/pk_fppi_palb_blmm.rds")
+pmodel <- rstan::extract(localfit)
+
+params <- within(list(),
+                 {
+                   beta_Intercept <- colMeans(pmodel$beta_Intercept)       # vector[v] 
+                   beta_stack <- colMeans(pmodel$beta_stack)               # vector[v*(p-1)] 
+                   g_stack <- colMeans(pmodel$g_stack)                     # vector[v*k][n_g]
+                   g_alpha <- colMeans(pmodel$g_alpha)                     # vector[v] 
+                   L_g <- colMeans(pmodel$L_g)                             # cholesky_factor_corr[v*k]
+                   stacked_sigma_b_g <- colMeans(pmodel$stacked_sigma_b_g) # vector[v*k]
+                   L_s <- colMeans(pmodel$L_s)                             # cholesky_factor_corr[v*k]
+                   stacked_sigma_b_s <- colMeans(pmodel$stacked_sigma_b_s) # vector[v*k]
+                 })
+  
+params <- c(stanDat, params)
+
+rstan_options (auto_write=TRUE)
+options (mc.cores=parallel::detectCores ())
+  
+pred_result <- stan(file=stan_model_file, warmup = 100, iter=400, chains=4, chain_id=1L, algorithm="NUTS", control = list(adapt_delta = 0.99, max_treedepth = 15), data=params, seed=483892929)
 
 ```
 
