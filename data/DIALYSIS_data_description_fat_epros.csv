@@ -56,14 +56,14 @@ rrdia;RR Dia;RR Diastole;RR Diastole;0;;;;;;Gaussian;0;0
 ravhaastaika;Haastattelu;Diet interview;Diet interview;0;;;;;;Gaussian;0;0
 energiakcal;Energia (kcal);Energy (kcal);Energy;0;;;;;kcal;Gaussian;0;0
 energiakj;Energia (kJ);Energy, kJ;Energy;0;0;;;;kJ;Gaussian;0;0
-ekcalkg;Energia kcal/kg;Energy, kcal/kg;Energy;0;0;0;;;kcal/kg;Gaussian;1;0
+ekcalkg;Energia kcal/kg;Energy, kcal/kg;Energy;100;0;0;;;kcal/kg;Gaussian;1;0
 proteiini;Proteiini;Protein;Protein;0;0;100;;;g/d;Gaussian;1;0
 protepros;Proteiini E%;Protein, E%;Protein, E%;100;0;22.9;;;E%;Gaussian;1;100
-protgkg;Prot g/kg;Protein, g/kg;Protein, g/kg;0;0;1000;;;g/kg/d;Gaussian;1;0
-hiilihydraatti;Hiilihydraatti;Carbonhydrates;Carbonhydrates;0;0;1000;g/d;;;Gaussian;1;0
-hhepros;Hiilihydraatti;Carbonhydrates, E%;Carbonhydrates, E%;100;0;100;;;E%;Gaussian;1;101
+protgkg;Prot g/kg;Protein, g/kg;Protein, g/kg;100;0;1000;;;g/kg/d;Gaussian;1;0
+hiilihydraatti;Hiilihydraatti;Carbohydrates;Carbohydrates;0;0;1000;g/d;;;Gaussian;1;0
+hhepros;Hiilihydraatti;Carbohydrates, E%;Carbohydrates, E%;100;0;100;;;E%;Gaussian;1;101
 rasva;Rasva;Fat;Fat;0;0;500;;;g/d;Gaussian;1;0
-rasvaepros;Rasva;Fat E%;Fat E%;0;0;13.6;;;E%;Gaussian;1;0
+rasvaepros;Rasva;Fat E%;Fat E%;100;0;13.6;;;E%;Gaussian;1;0
 safa;Safa;Safa;SAFA;0;0;500;;;g/d;Gaussian;1;0
 safaepros;Safa E%;Saturated Fatty Acids, E%;SFA, E%;100;0;19.7;;;E%;Gaussian;1;102
 mufa;Mufa;Monounsaturated Fatty Acids;MUFA;100;0;500;;;g/d;Gaussian;1;0
