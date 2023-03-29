@@ -137,7 +137,7 @@ generated quantities {
 
   // Unstack Y_rep to separate columns
   {
-    vector[p-1] beta[v];                // poulation-level effects (fixed effects)
+    vector[p-1] beta[v];                // population-level effects (fixed effects)
     vector[k] g[n_g,v];
     vector[k] group_effects;
     vector[k-1] group_effect[n_g,v];

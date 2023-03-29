@@ -173,26 +173,30 @@ patients <- as.numeric(levels(dialysis_imputed$potilas))
 patient_folds <- split(patients, cut(seq_along(patients),number_of_folds,labels = FALSE))
 
 # number of fold
-f <- 1
+f <- 2
 
 fold <- patient_folds[[f]]
 
 # Data to holdout belonging to patients in the fold
-holdout_index <- as.vector(as.numeric(dialysis_imputed$potilas %in% fold))
+
+dialysis_holdout <- dialysis_imputed[!dialysis_imputed$potilas %in% fold,]
+dialysis_holdout$potilas <- factor(dialysis_holdout$potilas) # recalculate patients
+dialysis_holdout$hoitoryhma <- factor(dialysis_holdout$hoitoryhma) # recalculate groups
+no_holdout <- rep(0, nrow(dialysis_holdout))
 
 # Change this path to match your environment
 cvmodelpath <- "models/BLMM_gamma_mv_cross"
 fold_title <- paste0(f,"_",paste0(fold, collapse = "_"))
 cvdir <- paste0(cvmodelpath, "/cvmodels/", fold_title)
-
+                     
 if (!dir.exists(cvdir))
 {
   dir.create(cvdir)
   
   dialdiet_gamma_mv3_two_level <- mebn.bipartite_two_level_multivariate(
                                      reaction_graph = initial_graph, 
-                                     inputdata = dialysis_imputed,
-                                     targetdata = holdout_index,
+                                     inputdata = dialysis_holdout,
+                                     targetdata = no_holdout,
                                      predictor_columns = assumedpredictors_fat_epros, 
                                      assumed_targets = pk_fppi_palb_targets, 
                                      group_column = "hoitoryhma",
@@ -482,7 +486,7 @@ stanDat <- mebn.set_mv_two_level_model_parameters(predictor_columns, target_colu
 stanDat$n_s <- length(fold)
 
 # get prediction info
-localfit <- readRDS("models/BLMM_gamma_mv_cross/two_levels/pk_fppi_palb_blmm.rds")
+localfit <- readRDS("models/BLMM_gamma_mv_cross/cvmodels/1_382_480_885_1184/pk_fppi_palb_blmm.rds")
 pmodel <- rstan::extract(localfit)
 
 params <- within(list(),
@@ -502,12 +506,25 @@ options (mc.cores=parallel::detectCores ())
   
 pred_result <- stan(file=stan_model_file, warmup = 1000, iter=2000, chains=4, chain_id=1L, algorithm="NUTS", control = list(adapt_delta = 0.99, max_treedepth = 15), data=params, seed=483892929)
 
-saveRDS(pred_result, "models/BLMM_gamma_mv_cross/cvmodels/prediction_of_fold_1.rds")
+saveRDS(pred_result, "models/BLMM_gamma_mv_cross/cvmodels/1_382_480_885_1184/prediction_of_fold_1.rds")
 
 
 f1 <- rstan::extract(pred_result)
 
 colMeans(f1$personal_effect)[1,,]
+
+# prediction_of_fold_1.rds:
+
+#           [,1]      [,2]        [,3]       [,4]       [,5]       [,6]       [,7]        [,8]       [,9]      [,10]      [,11]      [,12]      [,13]       [,14]
+# [1,] -0.9996708 0.7494443 -0.62161374  0.8435350  2.1297396  0.1203048 -0.2330631 0.213793085 -0.1220146 -0.3238217  0.7126822  0.6068531  0.1392637  0.29282189
+# [2,] -0.3005190 0.1383403  0.09918759 -0.4086775 -0.1085811  1.2831944  1.6172672 0.001746389  0.2401433  0.6729999 -0.6070765 -0.2728474 -0.8599512 -0.42040264
+# [3,] -0.9878504 0.0259088  2.57799471 -0.2937404  5.7709899 -0.7689201 -1.1791136 1.286673700  0.3839793  0.6112462  0.5179400  1.4565161 -0.2352357 -0.07218983
+#           [,15]        [,16]      [,17]      [,18]       [,19]       [,20]       [,21]       [,22]
+# [1,] -0.8539692 -0.205590214  0.4599113 -0.7689400 -0.02182469 -0.98441046 -0.01373830 -0.09678507
+# [2,]  1.2738393 -0.006078523 -0.5289976  0.6049099 -0.00395357  0.05360544  0.07070895 -0.19462409
+# [3,]  1.2437946  0.145441884  2.7335334 -0.3043888 -3.09328439  0.08206025  0.93855218  1.15704261
+
+# 
 
 #             [,1]       [,2]       [,3]      [,4]      [,5]       [,6]       [,7]       [,8]       [,9]     [,10]       [,11]      [,12]      [,13]       [,14] 
 # [1,] -0.55549560 -0.5422927 -0.9252287 0.4076694 0.9773776 0.72806074 -0.5464526  0.4965550  0.2814421 0.5369487  1.07505004  0.4324695 -0.5211899  0.76340476 
@@ -538,6 +555,11 @@ params$Y
 # palb 33.46272 38.00 38.00 40.00 20.00 20.00 33.46272 33.00
 
 colMeans(f1$Y_rep)
+
+  #           [,1]      [,2]      [,3]      [,4]      [,5]      [,6]      [,7]      [,8]
+  # [1,]  4.399940  5.599950  3.700077  3.499967  5.899967  3.500019  3.100158  3.800043
+  # [2,]  1.269033  1.519754  1.729939  1.439993  1.720280  1.269624  1.849994  2.080546
+  # [3,] 33.461366 37.990358 38.005312 39.988865 20.009260 20.019368 33.468581 32.998939
 
 #            [,1]      [,2]      [,3]      [,4]      [,5]      [,6]      [,7]      [,8]
 #  [1,]  4.399770  5.599672  3.700505  3.499609  5.900187  3.499984  3.099655  3.799794
