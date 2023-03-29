@@ -411,9 +411,9 @@ mebn.set_mv_two_level_model_parameters <- function(predictor_columns, target_col
                      p <- k <- ncol(X)               # all predictors may have random effects
                      Y <- Y
                      Z <- X
-                     n_g <- length(unique(inputdata[[group_column]]))
+                     n_g <- length(levels(inputdata[[group_column]]))
                      group <- as.integer(inputdata[[group_column]])
-                     n_s <- length(unique(inputdata[[subject_column]]))
+                     n_s <- length(levels(inputdata[[subject_column]]))
                      subject <- as.integer(inputdata[[subject_column]])
                      group_for_subject <- group_lookup 
                      holdout <- targetdata

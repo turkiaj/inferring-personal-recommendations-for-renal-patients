@@ -446,6 +446,7 @@ mse_summary
 ```
 ```{r prediction}
 library(rstan)
+source("mebn/v2/MEBNv2.r")
 
 stan_model_file <- "mebn/v2/BLMM_gamma_two_level_prediction.stan"
 
@@ -469,8 +470,9 @@ patients <- as.numeric(levels(dialysis_imputed$potilas))
 patient_folds <- split(patients, cut(seq_along(patients),number_of_folds,labels = FALSE))
 
 # number of fold
-f <- 1
+f <- 2
 fold <- patient_folds[[f]]
+fold_title <- paste0(f,"_",paste0(fold, collapse = "_"))
 
 inputdata <- dialysis_imputed[dialysis_imputed$potilas %in% fold,]
 predictor_columns <- assumedpredictors_fat_epros
@@ -481,12 +483,16 @@ targetdata <- NULL
 normalize_values <- TRUE
 reg_params <- NULL
 
+# Recalculate indexes of remaining patients and groups
+inputdata$potilas <- factor(inputdata$potilas) # recalculate patients
+#inputdata$hoitoryhma <- factor(inputdata$hoitoryhma) # do not refactor because g_stack has all levels 
+
 # prepare input data
 stanDat <- mebn.set_mv_two_level_model_parameters(predictor_columns, target_columns, group_column, subject_column, inputdata, targetdata, normalize_values, reg_params)
 stanDat$n_s <- length(fold)
 
 # get prediction info
-localfit <- readRDS("models/BLMM_gamma_mv_cross/cvmodels/1_382_480_885_1184/pk_fppi_palb_blmm.rds")
+localfit <- readRDS(paste0("models/BLMM_gamma_mv_cross/cvmodels/",fold_title,"/pk_fppi_palb_blmm.rds"))
 pmodel <- rstan::extract(localfit)
 
 params <- within(list(),
@@ -506,12 +512,11 @@ options (mc.cores=parallel::detectCores ())
   
 pred_result <- stan(file=stan_model_file, warmup = 1000, iter=2000, chains=4, chain_id=1L, algorithm="NUTS", control = list(adapt_delta = 0.99, max_treedepth = 15), data=params, seed=483892929)
 
-saveRDS(pred_result, "models/BLMM_gamma_mv_cross/cvmodels/1_382_480_885_1184/prediction_of_fold_1.rds")
+saveRDS(pred_result, paste0("models/BLMM_gamma_mv_cross/cvmodels/",fold_title,"/prediction_of_fold_",f,".rds"))
 
+#f1 <- rstan::extract(pred_result)
 
-f1 <- rstan::extract(pred_result)
-
-colMeans(f1$personal_effect)[1,,]
+#colMeans(f1$personal_effect)[1,,]
 
 # prediction_of_fold_1.rds:
 
@@ -535,7 +540,7 @@ colMeans(f1$personal_effect)[1,,]
 # [2,] 0.5249087   -0.04943655 0.1889010  0.1919664 -0.6712969  0.3644584  0.04849058  0.1361185
 # [3,] 1.1028048    2.18432211 0.9055719 -0.2468975 -0.2180041 -2.8385589 -1.00216349  1.5281516
 
-colMeans(pmodel$personal_effect)[1,,]
+#colMeans(pmodel$personal_effect)[1,,]
 
 #            [,1]        [,2]        [,3]       [,4]      [,5]       [,6]       [,7]        [,8]       [,9]     [,10]       [,11]      [,12]      [,13]       [,14]
 # [1,] -0.9582405 -0.60911515 -1.07789319  0.3662606 0.9323664 0.78524748 -0.6451500  0.58878691  0.3862581 0.5149180  1.01249981  0.3136776 -0.3604030  0.96402225
@@ -546,15 +551,14 @@ colMeans(pmodel$personal_effect)[1,,]
 # [2,] 0.4637436 -0.1704136 0.1999823  0.1868170 -0.7284429  0.4021748  0.06354545  0.1928145
 # [3,] 1.3929735  2.3095673 1.1980458 -0.6814966 -0.6213979 -3.2058555 -1.28874149  1.5980622
 
-
-params$Y
+#params$Y
 
 #           33    71     8    49    38    76       34    72
 # pk    4.40000  5.60  3.70  3.50  5.90  3.50  3.10000  3.80
 # fppi  1.27000  1.52  1.73  1.44  1.72  1.27  1.85000  2.08
 # palb 33.46272 38.00 38.00 40.00 20.00 20.00 33.46272 33.00
 
-colMeans(f1$Y_rep)
+#colMeans(f1$Y_rep)
 
   #           [,1]      [,2]      [,3]      [,4]      [,5]      [,6]      [,7]      [,8]
   # [1,]  4.399940  5.599950  3.700077  3.499967  5.899967  3.500019  3.100158  3.800043
