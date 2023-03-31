@@ -173,7 +173,7 @@ patients <- as.numeric(levels(dialysis_imputed$potilas))
 patient_folds <- split(patients, cut(seq_along(patients),number_of_folds,labels = FALSE))
 
 # number of fold
-f <- 2
+f <- 4
 
 fold <- patient_folds[[f]]
 
@@ -209,6 +209,398 @@ if (!dir.exists(cvdir))
 }
 
 ```
+
+
+```{r prediction}
+library(rstan)
+source("mebn/v2/MEBNv2.r")
+
+stan_model_file <- "mebn/v2/BLMM_gamma_two_level_prediction.stan"
+
+# reponses
+pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
+assumedtargets <- pk_fppi_palb_targets
+
+# data
+dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
+
+# add the dialysis treatment type as a grouping factor
+dialysis_imputed$hoitoryhma <- as.factor(dialysis_imputed$hoitomuoto)
+
+# and sort the data by treatment/patient/observation
+dialysis_imputed <- dialysis_imputed[order(dialysis_imputed$hoitoryhma, 
+                                           dialysis_imputed$potilas, dialysis_imputed$havainto),]
+
+# pick predicted fold
+number_of_folds <- 10
+patients <- as.numeric(levels(dialysis_imputed$potilas))
+patient_folds <- split(patients, cut(seq_along(patients),number_of_folds,labels = FALSE))
+
+# number of fold
+f <- 3
+fold <- patient_folds[[f]]
+fold_title <- paste0(f,"_",paste0(fold, collapse = "_"))
+
+inputdata <- dialysis_imputed[dialysis_imputed$potilas %in% fold,]
+predictor_columns <- assumedpredictors_fat_epros
+target_columns <- pk_fppi_palb_targets
+group_column <- "hoitoryhma"
+subject_column <- "potilas"
+targetdata <- NULL
+normalize_values <- TRUE
+reg_params <- NULL
+
+# Recalculate indexes of remaining patients and groups
+inputdata$potilas <- factor(inputdata$potilas) # recalculate patients
+#inputdata$hoitoryhma <- factor(inputdata$hoitoryhma) # do not refactor because g_stack has all levels 
+
+# prepare input data
+stanDat <- mebn.set_mv_two_level_model_parameters(predictor_columns, target_columns, group_column, subject_column, inputdata, targetdata, normalize_values, reg_params)
+stanDat$n_s <- length(fold)
+
+# get prediction info
+#localfit <- readRDS(paste0("models/BLMM_gamma_mv_cross/cvmodels/",fold_title,"/pk_fppi_palb_blmm.rds"))
+localfit <- readRDS(paste0("/media/sf_cvmodels/",fold_title,"/pk_fppi_palb_blmm.rds"))
+
+pmodel <- rstan::extract(localfit)
+
+params <- within(list(),
+                 {
+                   beta_Intercept <- colMeans(pmodel$beta_Intercept)       # vector[v] 
+                   beta_stack <- colMeans(pmodel$beta_stack)               # vector[v*(p-1)] 
+                   g_stack <- colMeans(pmodel$g_stack)                     # vector[v*k][n_g]
+                   g_alpha <- colMeans(pmodel$g_alpha)                     # vector[v] 
+                   L_s <- colMeans(pmodel$L_s)                             # cholesky_factor_corr[v*k]
+                   stacked_sigma_b_s <- colMeans(pmodel$stacked_sigma_b_s) # vector[v*k]
+                 })
+  
+params <- c(stanDat, params)
+
+rstan_options (auto_write=TRUE)
+options (mc.cores=parallel::detectCores ())
+  
+pred_result <- stan(file=stan_model_file, warmup = 1000, iter=2000, chains=4, chain_id=1L, algorithm="NUTS", control = list(adapt_delta = 0.99, max_treedepth = 15), data=params, seed=483892929)
+
+saveRDS(pred_result, paste0("models/BLMM_gamma_mv_cross/cvmodels/",fold_title,"/prediction_of_fold_",f,".rds"))
+
+#f1 <- rstan::extract(pred_result)
+
+#colMeans(f1$personal_effect)[1,,]
+
+#colMeans(pmodel$personal_effect)[1,,]
+
+```
+
+
+```{r}
+library(igraph)
+library(rstan)
+source("mebn/v2/MEBNv2.r")
+
+# This script takes personal predictions from file in fold
+# prediction_of_fold_X.rds and updates them to existing graph
+
+dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
+
+# add the dialysis treatment type as a grouping factor
+dialysis_imputed$hoitoryhma <- as.factor(dialysis_imputed$hoitomuoto)
+
+# and sort the data by treatment/patient/observation
+dialysis_imputed <- dialysis_imputed[order(dialysis_imputed$hoitoryhma, 
+                                           dialysis_imputed$potilas, dialysis_imputed$havainto),]
+
+graph_person_id <- 11
+person_id <- 3
+f <- 3
+fold_title <- "3_1983_2303_2440"
+
+subject_code <- levels(dialysis_imputed$potilas)[graph_person_id]
+print(subject_code)
+
+personal_model_dir <- paste0("graphs/mv3_cross_two_levels_cv/",graph_person_id) 
+graphpath <- paste0(personal_model_dir,"/personal_graph.graphml")
+print(graphpath)
+
+reaction_graph <- read.graph(graphpath, "graphml")
+  
+localfit <- readRDS(paste0("models/BLMM_gamma_mv_cross/cvmodels/",fold_title,"/prediction_of_fold_",f,".rds"))
+
+predictor_columns <- assumedpredictors_fat_epros
+target_variables <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
+
+# Overwrite beta and intercept with the predicted values
+
+for (c in 1:dim(target_variables)[1])
+{
+  #c <- 1
+  
+  target_column <- target_variables[c,]
+  target_name <- as.vector(target_column$Name)
+  target_vertex <- V(reaction_graph)[target_name]
+  
+  # - predicted intercept
+  
+  localfit_p_intercept <- extract(localfit, pars = c(paste0("personal_intercept[",person_id,",",c,"]")))
+  int_samples_file <- paste0(target_name, "_personal_intercept.rds")
+  
+  # update the distribution file of intercept
+  saveRDS(localfit_p_intercept, paste0(personal_model_dir, "/", int_samples_file))
+  
+  # update personal_intercept in graph also
+  reaction_graph <- set_vertex_attr(reaction_graph, "personal_intercept", target_vertex, int_samples_file)
+
+  # extract adjusted effects from the local distribution
+  pe <- mebn.personal_effects_from_multivariate(localfit, c, person_id)
+    
+  # - Loop through betas for current target
+  predictor_names <- as.vector(predictor_columns$Name)
+    
+  for (p in 1:length(predictor_names))
+  {
+    #p <-1 
+    
+    pred_column <- predictor_columns[p,]
+    predictor_name <- predictor_names[p]
+    predictor_vertex <- V(reaction_graph)[predictor_name]
+    
+    # get the predicted personal effect
+    personal_effect_property <- paste0("personal_effect[",person_id,",",c,",",p,"]")
+    personal_beta <- extract(localfit, pars = personal_effect_property)
+    personal_beta <- unlist(personal_beta, use.names=FALSE) # convert from one item list to vector
+    effect_name <- paste0(predictor_name,"_",target_name,"_beta")
+    
+    # update the personal effect distribution array file  
+    saveRDS(personal_beta, paste0(personal_model_dir, "/", effect_name, ".rds"))
+
+    # get edge predictor_name -> target_name
+    edge_id <- get.edge.ids(reaction_graph, c(predictor_name,target_name))
+    beta_edge <- E(reaction_graph)[edge_id]
+    
+    print(beta_edge)
+     
+    reaction_graph <- set_edge_attr(reaction_graph, index = edge_id, name = "weight", value = pe$personal_effect[p])
+    reaction_graph <- set_edge_attr(reaction_graph, index = edge_id, name = "value", value = pe$personal_effect[p])
+    reaction_graph <- set_edge_attr(reaction_graph, index = edge_id, name = "value_lCI", value = pe$personal_effect_lCI[p])
+    reaction_graph <- set_edge_attr(reaction_graph, index = edge_id, name = "value_uCI", value = pe$personal_effect_uCI[p])
+    reaction_graph <- set_edge_attr(reaction_graph, index = edge_id, name = "b", value = pe$b[p])          
+    reaction_graph <- set_edge_attr(reaction_graph, index = edge_id, name = "b_lCI", value = pe$b_lCI[p])
+    reaction_graph <- set_edge_attr(reaction_graph, index = edge_id, name = "b_uCI", value = pe$b_uCI[p])  
+
+    # personal effect vertex 
+    pe_vertex <- V(reaction_graph)[paste0("personal_", predictor_name, "_", target_name)]
+    vertex_id <- as.integer(pe_vertex)
+    
+    reaction_graph <- set_vertex_attr(reaction_graph, index = vertex_id, name = "value", value = pe$personal_effect[p])
+    reaction_graph <- set_vertex_attr(reaction_graph, index = vertex_id, name = "value_lCI", value = pe$personal_effect_lCI[p])
+    reaction_graph <- set_vertex_attr(reaction_graph, index = vertex_id, name = "value_uCI", value = pe$personal_effect_uCI[p])
+    reaction_graph <- set_vertex_attr(reaction_graph, index = vertex_id, name = "mode", value = 0)
+
+    # Personal variation (b)) vertex
+    b_vertex <- V(reaction_graph)[paste0("b_", predictor_name, "_", target_name)]
+    vertex_id <- as.integer(b_vertex)
+    
+    reaction_graph <- set_vertex_attr(reaction_graph, index = vertex_id, name = "b", value = pe$b[p])          
+    reaction_graph <- set_vertex_attr(reaction_graph, index = vertex_id, name = "b_lCI", value = pe$b_lCI[p])
+    reaction_graph <- set_vertex_attr(reaction_graph, index = vertex_id, name = "b_uCI", value = pe$b_uCI[p])  
+    reaction_graph <- set_vertex_attr(reaction_graph, index = vertex_id, name = "mode", value = 0)  
+
+    # Save the updated graph
+    write.graph(reaction_graph, paste0(personal_model_dir,"/personal_graph.graphml"), "graphml")
+  }
+}
+
+
+```
+
+
+```{r simulated_MSE_for_cv, eval=FALSE, echo=FALSE}
+library(igraph)
+source("mebn/v2/MEBNv2.r")
+
+potassium_org_mean <- mean(dialysis$kalium) # 2755
+potassium_org_sd <- sd(dialysis$kalium) # 949
+  
+phosphorous_org_mean <- mean(dialysis$fosfori) # 2755
+phosphorous_org_sd <- sd(dialysis$fosfori) # 949
+
+pk_mean <- mean(dialysis$pk)
+fppi_mean <- mean(dialysis$fppi)
+palb_mean <- mean(dialysis$palb, na.rm = TRUE)
+
+mse_summary <- data.frame(matrix(ncol = 5, nrow = 0), row.names = NULL)
+
+graph_dir_candidates <- c("mv3_cross_two_levels_cv")
+
+for (model_dir in graph_dir_candidates) {
+
+  graph_dir <- paste0("graphs/",model_dir,"/")
+
+  for (person_id in 1:11) {
+  
+    print(paste0("Simulating patient ", person_id))
+  
+    subject_code <- levels(dialysis$potilas)[person_id]
+    treatment <- unique(dialysis[dialysis$potilas == subject_code,]$hoitomuoto)
+    
+    # Normal ranges of concentration are personalized
+    personal_info <- head(dialysis[dialysis$potilas == subject_code,],1)
+    recommeded_concentrations <- mebn.get_personal_target_guidelines(personal_info, patient_in_dialysis = TRUE)
+    
+    personal_model_dir <- paste0(graph_dir,person_id)
+    personal_graph <- read.graph(paste0(personal_model_dir, "/personal_graph.graphml"), "graphml")
+    
+    # Sample diet proposals and matching concentration predictions
+    
+    repeat_model <- mebn.Query(reaction_graph = personal_graph,
+                           graph_dir = personal_model_dir,
+                           queried_nodes = c("kalium","fosfori"),
+                           query = recommeded_concentrations,
+                           proposal_limits = c(((0 - potassium_org_mean) / potassium_org_sd),
+                                             ((5800 - potassium_org_mean) / potassium_org_sd),
+                                             ((0 - phosphorous_org_mean) / phosphorous_org_sd),
+                                             ((2550 - phosphorous_org_mean) / phosphorous_org_sd)),                         
+                           stan_model_file = "diet/multivariate_intake_recommendation.stan",
+                           conc_lower_limits = as.vector(recommeded_concentrations$lower_limits),
+                           conc_upper_limits = as.vector(recommeded_concentrations$upper_limits),
+                           beta_point_est = "mean",
+                           param_point_est = "mean",
+                           X_point_est = "mean",
+                           posterior_samples = 1,
+                           X_sd_coef = 1,
+                           repeat_only = 1)
+  
+    repeats <- rstan::extract(repeat_model)
+   
+    pk <- repeats$concentration[,,1]
+    fppi <- repeats$concentration[,,2]
+    palb <- repeats$concentration[,,3]
+     
+    true_concs <- dialysis %>%
+         filter(potilas == subject_code) %>%
+         select(havainto, pk, fppi, palb)
+    
+    personal_mse <- cbind(subject_code,
+                              model_dir,
+                              mebn.NRMSE(mean(pk), mean(true_concs$pk), pk_mean),
+                              mebn.NRMSE(mean(fppi), mean(true_concs$fppi), fppi_mean),
+                              mebn.NRMSE(mean(palb), mean(true_concs$palb), palb_mean))
+
+    mse_summary <- rbind(mse_summary, personal_mse)
+  }
+}
+
+colnames(mse_summary) <- c("subject", "reaction_model", "pk_nrmse", "fppi_nrmse", "palb_nrmse")
+
+saveRDS(mse_summary, "model_evaluation/NRMSE_comparison_mv_cv_models_fold123.rds")
+
+write.csv2(mse_summary, file="model_evaluation/NRMSE_comparison_mv_cv_models_fold123.csv", row.names = FALSE)
+
+
+# 382	mv3_cross_two_levels_cv	0.179596512269089	0.371568159986503	0.044177163063653
+# 480	mv3_cross_two_levels_cv	0.00147084475156445	0.146780358334964	NA
+# 885	mv3_cross_two_levels_cv	0.0663716764630662	0.0328530762745591	0.00144655057373326
+# 1184	mv3_cross_two_levels_cv	0.273819886426603	0.544196669276587	NA
+
+"subject";"reaction_model";"pk_nrmse";"fppi_nrmse";"palb_nrmse"
+"382";"mv3_cross_two_levels";"0.00496037461059038";"0.00592023398084794";"0.001351605749535"
+"480";"mv3_cross_two_levels";"0.00479245125891595";"0.00664892551664021";NA
+"885";"mv3_cross_two_levels";"0.004448630873442";"0.00130408489230107";"5.51569163857131e-05"
+"1184";"mv3_cross_two_levels";"0.00469320336101296";"0.00687799094451945";NA
+
+cv_pk_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels_cv",]$pk_nrmse)) # 0.004475995
+cv_fppi_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels_cv",]$fppi_nrmse)) # 0.006727212
+cv_palb_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels_cv",]$palb_nrmse), na.rm=TRUE) # 0.001819183
+
+cv_mse <- mean(c(cv_pk_mse, cv_fppi_mse, cv_palb_mse))
+
+mse_table <- rbind(cv_pk_mse, cv_fppi_mse, cv_palb_mse, cv_mse)
+#mse_table[,2:5] <- round(as.numeric(mse_table[,2:5]),3)
+#mse_summary
+
+# fold 1-11:
+#cv_pk_mse   0.19815349
+#cv_fppi_mse 0.22680129
+#cv_palb_mse 0.03993272
+#cv_mse      0.15496250
+
+# fold1: cv_mse      0.14232538
+
+#                              mv3c2_pk_mse mv3c2_fppi_mse mv3c2_palb_mse        
+#[1,] "mv3_cross_two_levels"   "0.003"      "0.006"        "0.002"        "0.003"
+#[2,] "mv3_cross_single_level" "0.078"      "0.233"        "0.103"        "0.078"
+#[3,] "separate_pk_fppi"       "0.081"      "0.175"        "0"            "0.081"
+
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(igraph)
+
+mse_summary <- readRDS("model_evaluation/NRMSE_comparison_mv_cv_models.rds")
+
+mv_model <- mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels",]
+cv_pred <- mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels_cv",]
+
+#mean(c(mean(as.numeric(mv_model$pk_nrmse)), mean(as.numeric(mv_model$fppi_nrmse)), mean(as.numeric(mv_model$palb_nrmse)))) #0.002787206
+#mean(c(mean(as.numeric(cv_pred$pk_nrmse)), mean(as.numeric(cv_pred$fppi_nrmse)), mean(as.numeric(cv_pred$palb_nrmse)))) #0.2140092
+
+error_analysis.df <- mv_model %>%
+  inner_join(cv_pred, by = "subject") %>%
+  mutate(pk_error = abs(as.numeric(pk_nrmse.x) - as.numeric(pk_nrmse.y))) %>%
+  mutate(fppi_error = abs(as.numeric(fppi_nrmse.x) - as.numeric(fppi_nrmse.y))) %>%
+  mutate(palb_error = abs(as.numeric(palb_nrmse.x) - as.numeric(palb_nrmse.y))) %>%
+  select(subject, pk_error, fppi_error, palb_error)
+
+error_analysis.df$avg_error <- rowMeans(cbind(error_analysis.df$pk_error, error_analysis.df$fppi_error, error_analysis.df$palb_error))
+
+reaction_rms <- data.frame(matrix(ncol = 5, nrow = 0), row.names = NULL)
+
+# Ennustevirhe ei selity alla olevalla tavalla
+# Hypoteesi: virhe kasvaa jos holdout-potilas reagoi eri tavalla kuin malli ennustaa
+
+for (subject_code in error_analysis.df$subject) {
+  
+  person_id <- which(levels(dialysis_imputed$potilas) == subject_code)
+  personal_graph <- read.graph(paste0("graphs/mv3_cross_two_levels/", person_id, "/personal_graph.graphml"), "graphml")
+  
+  general_effects <- V(personal_graph)[V(personal_graph)$type == "general_effect"]
+  pk_general_effects <- general_effects[endsWith(general_effects$name, "_pk")]
+  fppi_general_effects <- general_effects[endsWith(general_effects$name, "_fppi")]
+  palb_general_effects <- general_effects[endsWith(general_effects$name, "_palb")]
+  
+  personal_effects <- V(personal_graph)[V(personal_graph)$type == "personal"]
+  pk_personal_effects <- personal_effects[endsWith(personal_effects$name, "_pk")]
+  fppi_personal_effects <- personal_effects[endsWith(personal_effects$name, "_fppi")]
+  palb_personal_effects <- personal_effects[endsWith(personal_effects$name, "_palb")]
+
+  pk_rms <- mean(abs(pk_general_effects$value - pk_personal_effects$value))
+  fppi_rms <- mean(abs(fppi_general_effects$value - fppi_personal_effects$value))
+  palb_rms <- mean(abs(palb_general_effects$value - palb_personal_effects$value))
+  
+  rms_between_general_and_personal <- mean(abs(general_effects$value - personal_effects$value))
+  
+  reaction_rms <- rbind(reaction_rms, c(subject_code, pk_rms, fppi_rms, palb_rms, rms_between_general_and_personal))
+}
+
+colnames(reaction_rms) <- c("subject", "pk_reaction_distance", "fppi_reaction_distance", "palb_reaction_distance", "reaction_distance")
+reaction_rms$pk_reaction_distance <- as.numeric(reaction_rms$pk_reaction_distance)
+reaction_rms$fppi_reaction_distance <- as.numeric(reaction_rms$fppi_reaction_distance)
+reaction_rms$palb_reaction_distance <- as.numeric(reaction_rms$palb_reaction_distance)
+
+plot.df <- error_analysis.df %>%
+  inner_join(reaction_rms, by="subject")
+
+ggplot(plot.df) +
+  geom_point(aes(x = pk_error, y = pk_reaction_distance), color = "black") +
+  geom_point(aes(x = fppi_error, y = fppi_reaction_distance), color = "red") +
+  geom_point(aes(x = palb_error, y = palb_reaction_distance), color = "blue") 
+
+mse_summary
+
+```
+
+#TODO: remove
 
 
 ```{r extract_personal_generative_models_cv, eval=FALSE, echo=FALSE}
@@ -291,287 +683,6 @@ for (person_id in which(patients %in% fold)) {
 }
 
 ```
-
-
-```{r simulated_MSE_for_cv, eval=FALSE, echo=FALSE}
-library(igraph)
-source("mebn/v2/MEBNv2.r")
-
-potassium_org_mean <- mean(dialysis$kalium) # 2755
-potassium_org_sd <- sd(dialysis$kalium) # 949
-  
-phosphorous_org_mean <- mean(dialysis$fosfori) # 2755
-phosphorous_org_sd <- sd(dialysis$fosfori) # 949
-
-pk_mean <- mean(dialysis$pk)
-fppi_mean <- mean(dialysis$fppi)
-palb_mean <- mean(dialysis$palb, na.rm = TRUE)
-
-mse_summary <- data.frame(matrix(ncol = 5, nrow = 0), row.names = NULL)
-
-graph_dir_candidates <- c("mv3_cross_two_levels", "mv3_cross_two_levels_cv")
-
-for (model_dir in graph_dir_candidates) {
-
-  graph_dir <- paste0("graphs/",model_dir,"/")
-
-  for (person_id in 1:5) {
-  
-    print(paste0("Simulating patient ", person_id))
-  
-    subject_code <- levels(dialysis$potilas)[person_id]
-    treatment <- unique(dialysis[dialysis$potilas == subject_code,]$hoitomuoto)
-    
-    # Normal ranges of concentration are personalized
-    personal_info <- head(dialysis[dialysis$potilas == subject_code,],1)
-    recommeded_concentrations <- mebn.get_personal_target_guidelines(personal_info, patient_in_dialysis = TRUE)
-    
-    personal_model_dir <- paste0(graph_dir,person_id)
-    personal_graph <- read.graph(paste0(personal_model_dir, "/personal_graph.graphml"), "graphml")
-    
-    # Sample diet proposals and matching concentration predictions
-    
-    repeat_model <- mebn.Query(reaction_graph = personal_graph,
-                           graph_dir = personal_model_dir,
-                           queried_nodes = c("kalium","fosfori"),
-                           query = recommeded_concentrations,
-                           proposal_limits = c(((0 - potassium_org_mean) / potassium_org_sd),
-                                             ((5800 - potassium_org_mean) / potassium_org_sd),
-                                             ((0 - phosphorous_org_mean) / phosphorous_org_sd),
-                                             ((2550 - phosphorous_org_mean) / phosphorous_org_sd)),                         
-                           stan_model_file = "diet/multivariate_intake_recommendation.stan",
-                           conc_lower_limits = as.vector(recommeded_concentrations$lower_limits),
-                           conc_upper_limits = as.vector(recommeded_concentrations$upper_limits),
-                           beta_point_est = "mean",
-                           param_point_est = "mean",
-                           X_point_est = "mean",
-                           posterior_samples = 1,
-                           X_sd_coef = 1,
-                           repeat_only = 1)
-  
-    repeats <- rstan::extract(repeat_model)
-   
-    pk <- repeats$concentration[,,1]
-    fppi <- repeats$concentration[,,2]
-    palb <- repeats$concentration[,,3]
-     
-    true_concs <- dialysis %>%
-         filter(potilas == subject_code) %>%
-         select(havainto, pk, fppi, palb)
-    
-    personal_mse <- cbind(subject_code,
-                              model_dir,
-                              mebn.NRMSE(mean(pk), mean(true_concs$pk), pk_mean),
-                              mebn.NRMSE(mean(fppi), mean(true_concs$fppi), fppi_mean),
-                              mebn.NRMSE(mean(palb), mean(true_concs$palb), palb_mean))
-
-    mse_summary <- rbind(mse_summary, personal_mse)
-  }
-}
-
-colnames(mse_summary) <- c("subject", "reaction_model", "pk_nrmse", "fppi_nrmse", "palb_nrmse")
-
-saveRDS(mse_summary, "model_evaluation/NRMSE_comparison_mv_cv_models_5.rds")
-
-write.csv2(mse_summary, file="model_evaluation/NRMSE_comparison_mv_cv_models_5.csv", row.names = FALSE)
-mse_summary
-```
-
-```{r}
-library(dplyr)
-library(ggplot2)
-library(igraph)
-
-mse_summary <- readRDS("model_evaluation/NRMSE_comparison_mv_cv_models.rds")
-
-mv_model <- mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels",]
-cv_pred <- mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels_cv",]
-
-#mean(c(mean(as.numeric(mv_model$pk_nrmse)), mean(as.numeric(mv_model$fppi_nrmse)), mean(as.numeric(mv_model$palb_nrmse)))) #0.002787206
-#mean(c(mean(as.numeric(cv_pred$pk_nrmse)), mean(as.numeric(cv_pred$fppi_nrmse)), mean(as.numeric(cv_pred$palb_nrmse)))) #0.2140092
-
-error_analysis.df <- mv_model %>%
-  inner_join(cv_pred, by = "subject") %>%
-  mutate(pk_error = abs(as.numeric(pk_nrmse.x) - as.numeric(pk_nrmse.y))) %>%
-  mutate(fppi_error = abs(as.numeric(fppi_nrmse.x) - as.numeric(fppi_nrmse.y))) %>%
-  mutate(palb_error = abs(as.numeric(palb_nrmse.x) - as.numeric(palb_nrmse.y))) %>%
-  select(subject, pk_error, fppi_error, palb_error)
-
-error_analysis.df$avg_error <- rowMeans(cbind(error_analysis.df$pk_error, error_analysis.df$fppi_error, error_analysis.df$palb_error))
-
-reaction_rms <- data.frame(matrix(ncol = 5, nrow = 0), row.names = NULL)
-
-# Ennustevirhe ei selity alla olevalla tavalla
-# Hypoteesi: virhe kasvaa jos holdout-potilas reagoi eri tavalla kuin malli ennustaa
-
-for (subject_code in error_analysis.df$subject) {
-  
-  person_id <- which(levels(dialysis_imputed$potilas) == subject_code)
-  personal_graph <- read.graph(paste0("graphs/mv3_cross_two_levels/", person_id, "/personal_graph.graphml"), "graphml")
-  
-  general_effects <- V(personal_graph)[V(personal_graph)$type == "general_effect"]
-  pk_general_effects <- general_effects[endsWith(general_effects$name, "_pk")]
-  fppi_general_effects <- general_effects[endsWith(general_effects$name, "_fppi")]
-  palb_general_effects <- general_effects[endsWith(general_effects$name, "_palb")]
-  
-  personal_effects <- V(personal_graph)[V(personal_graph)$type == "personal"]
-  pk_personal_effects <- personal_effects[endsWith(personal_effects$name, "_pk")]
-  fppi_personal_effects <- personal_effects[endsWith(personal_effects$name, "_fppi")]
-  palb_personal_effects <- personal_effects[endsWith(personal_effects$name, "_palb")]
-
-  pk_rms <- mean(abs(pk_general_effects$value - pk_personal_effects$value))
-  fppi_rms <- mean(abs(fppi_general_effects$value - fppi_personal_effects$value))
-  palb_rms <- mean(abs(palb_general_effects$value - palb_personal_effects$value))
-  
-  rms_between_general_and_personal <- mean(abs(general_effects$value - personal_effects$value))
-  
-  reaction_rms <- rbind(reaction_rms, c(subject_code, pk_rms, fppi_rms, palb_rms, rms_between_general_and_personal))
-}
-
-colnames(reaction_rms) <- c("subject", "pk_reaction_distance", "fppi_reaction_distance", "palb_reaction_distance", "reaction_distance")
-reaction_rms$pk_reaction_distance <- as.numeric(reaction_rms$pk_reaction_distance)
-reaction_rms$fppi_reaction_distance <- as.numeric(reaction_rms$fppi_reaction_distance)
-reaction_rms$palb_reaction_distance <- as.numeric(reaction_rms$palb_reaction_distance)
-
-plot.df <- error_analysis.df %>%
-  inner_join(reaction_rms, by="subject")
-
-ggplot(plot.df) +
-  geom_point(aes(x = pk_error, y = pk_reaction_distance), color = "black") +
-  geom_point(aes(x = fppi_error, y = fppi_reaction_distance), color = "red") +
-  geom_point(aes(x = palb_error, y = palb_reaction_distance), color = "blue") 
-
-mse_summary
-
-```
-```{r prediction}
-library(rstan)
-source("mebn/v2/MEBNv2.r")
-
-stan_model_file <- "mebn/v2/BLMM_gamma_two_level_prediction.stan"
-
-# reponses
-pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
-assumedtargets <- pk_fppi_palb_targets
-
-# data
-dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
-
-# add the dialysis treatment type as a grouping factor
-dialysis_imputed$hoitoryhma <- as.factor(dialysis_imputed$hoitomuoto)
-
-# and sort the data by treatment/patient/observation
-dialysis_imputed <- dialysis_imputed[order(dialysis_imputed$hoitoryhma, 
-                                           dialysis_imputed$potilas, dialysis_imputed$havainto),]
-
-# pick predicted fold
-number_of_folds <- 10
-patients <- as.numeric(levels(dialysis_imputed$potilas))
-patient_folds <- split(patients, cut(seq_along(patients),number_of_folds,labels = FALSE))
-
-# number of fold
-f <- 2
-fold <- patient_folds[[f]]
-fold_title <- paste0(f,"_",paste0(fold, collapse = "_"))
-
-inputdata <- dialysis_imputed[dialysis_imputed$potilas %in% fold,]
-predictor_columns <- assumedpredictors_fat_epros
-target_columns <- pk_fppi_palb_targets
-group_column <- "hoitoryhma"
-subject_column <- "potilas"
-targetdata <- NULL
-normalize_values <- TRUE
-reg_params <- NULL
-
-# Recalculate indexes of remaining patients and groups
-inputdata$potilas <- factor(inputdata$potilas) # recalculate patients
-#inputdata$hoitoryhma <- factor(inputdata$hoitoryhma) # do not refactor because g_stack has all levels 
-
-# prepare input data
-stanDat <- mebn.set_mv_two_level_model_parameters(predictor_columns, target_columns, group_column, subject_column, inputdata, targetdata, normalize_values, reg_params)
-stanDat$n_s <- length(fold)
-
-# get prediction info
-localfit <- readRDS(paste0("models/BLMM_gamma_mv_cross/cvmodels/",fold_title,"/pk_fppi_palb_blmm.rds"))
-pmodel <- rstan::extract(localfit)
-
-params <- within(list(),
-                 {
-                   beta_Intercept <- colMeans(pmodel$beta_Intercept)       # vector[v] 
-                   beta_stack <- colMeans(pmodel$beta_stack)               # vector[v*(p-1)] 
-                   g_stack <- colMeans(pmodel$g_stack)                     # vector[v*k][n_g]
-                   g_alpha <- colMeans(pmodel$g_alpha)                     # vector[v] 
-                   L_s <- colMeans(pmodel$L_s)                             # cholesky_factor_corr[v*k]
-                   stacked_sigma_b_s <- colMeans(pmodel$stacked_sigma_b_s) # vector[v*k]
-                 })
-  
-params <- c(stanDat, params)
-
-rstan_options (auto_write=TRUE)
-options (mc.cores=parallel::detectCores ())
-  
-pred_result <- stan(file=stan_model_file, warmup = 1000, iter=2000, chains=4, chain_id=1L, algorithm="NUTS", control = list(adapt_delta = 0.99, max_treedepth = 15), data=params, seed=483892929)
-
-saveRDS(pred_result, paste0("models/BLMM_gamma_mv_cross/cvmodels/",fold_title,"/prediction_of_fold_",f,".rds"))
-
-#f1 <- rstan::extract(pred_result)
-
-#colMeans(f1$personal_effect)[1,,]
-
-# prediction_of_fold_1.rds:
-
-#           [,1]      [,2]        [,3]       [,4]       [,5]       [,6]       [,7]        [,8]       [,9]      [,10]      [,11]      [,12]      [,13]       [,14]
-# [1,] -0.9996708 0.7494443 -0.62161374  0.8435350  2.1297396  0.1203048 -0.2330631 0.213793085 -0.1220146 -0.3238217  0.7126822  0.6068531  0.1392637  0.29282189
-# [2,] -0.3005190 0.1383403  0.09918759 -0.4086775 -0.1085811  1.2831944  1.6172672 0.001746389  0.2401433  0.6729999 -0.6070765 -0.2728474 -0.8599512 -0.42040264
-# [3,] -0.9878504 0.0259088  2.57799471 -0.2937404  5.7709899 -0.7689201 -1.1791136 1.286673700  0.3839793  0.6112462  0.5179400  1.4565161 -0.2352357 -0.07218983
-#           [,15]        [,16]      [,17]      [,18]       [,19]       [,20]       [,21]       [,22]
-# [1,] -0.8539692 -0.205590214  0.4599113 -0.7689400 -0.02182469 -0.98441046 -0.01373830 -0.09678507
-# [2,]  1.2738393 -0.006078523 -0.5289976  0.6049099 -0.00395357  0.05360544  0.07070895 -0.19462409
-# [3,]  1.2437946  0.145441884  2.7335334 -0.3043888 -3.09328439  0.08206025  0.93855218  1.15704261
-
-# 
-
-#             [,1]       [,2]       [,3]      [,4]      [,5]       [,6]       [,7]       [,8]       [,9]     [,10]       [,11]      [,12]      [,13]       [,14] 
-# [1,] -0.55549560 -0.5422927 -0.9252287 0.4076694 0.9773776 0.72806074 -0.5464526  0.4965550  0.2814421 0.5369487  1.07505004  0.4324695 -0.5211899  0.76340476 
-# [2,] -0.03412393  0.1567546  0.1324968 0.1514874 0.7368516 0.07286838  0.1950581 -0.0258900 -0.2465498 0.1347548 -0.04155234 -0.1124448 -0.6304638 -0.01316757 
-# [3,]  1.10072369  0.6051590  3.2617181 0.3180909 8.2291495 0.33715955  3.7885873  0.5713748 -1.1029995 1.2657535 -1.96792514  1.4271501  1.4254116  1.35777763 
-#          [,15]      [,16]     [,17]      [,18]      [,19]      [,20]       [,21]      [,22]
-# [1,] 0.2173843   -0.25152162 0.5030715 -0.2948544 -0.2985976 -0.5268897 -0.26715978 -0.3043021
-# [2,] 0.5249087   -0.04943655 0.1889010  0.1919664 -0.6712969  0.3644584  0.04849058  0.1361185
-# [3,] 1.1028048    2.18432211 0.9055719 -0.2468975 -0.2180041 -2.8385589 -1.00216349  1.5281516
-
-#colMeans(pmodel$personal_effect)[1,,]
-
-#            [,1]        [,2]        [,3]       [,4]      [,5]       [,6]       [,7]        [,8]       [,9]     [,10]       [,11]      [,12]      [,13]       [,14]
-# [1,] -0.9582405 -0.60911515 -1.07789319  0.3662606 0.9323664 0.78524748 -0.6451500  0.58878691  0.3862581 0.5149180  1.01249981  0.3136776 -0.3604030  0.96402225
-# [2,] -0.3259153  0.04019945 -0.05229621  0.1769445 0.8293997 0.06116893  0.1282111 -0.02971083 -0.2290407 0.1190545 -0.06110787 -0.1506061 -0.6529854 -0.07012724
-# [3,]  1.4274491  0.50641644  3.32144497 -0.5557726 8.6202607 0.54342137  3.9087613  0.86828878 -1.1140088 1.2379696 -1.83613492  1.9197873  0.9610049  1.45208416
-#          [,15]      [,16]     [,17]      [,18]      [,19]      [,20]       [,21]      [,22]
-# [1,] 0.2985909 -0.3610950 0.5107339 -0.1634608 -0.2037745 -0.5681660 -0.28494567 -0.3448214
-# [2,] 0.4637436 -0.1704136 0.1999823  0.1868170 -0.7284429  0.4021748  0.06354545  0.1928145
-# [3,] 1.3929735  2.3095673 1.1980458 -0.6814966 -0.6213979 -3.2058555 -1.28874149  1.5980622
-
-#params$Y
-
-#           33    71     8    49    38    76       34    72
-# pk    4.40000  5.60  3.70  3.50  5.90  3.50  3.10000  3.80
-# fppi  1.27000  1.52  1.73  1.44  1.72  1.27  1.85000  2.08
-# palb 33.46272 38.00 38.00 40.00 20.00 20.00 33.46272 33.00
-
-#colMeans(f1$Y_rep)
-
-  #           [,1]      [,2]      [,3]      [,4]      [,5]      [,6]      [,7]      [,8]
-  # [1,]  4.399940  5.599950  3.700077  3.499967  5.899967  3.500019  3.100158  3.800043
-  # [2,]  1.269033  1.519754  1.729939  1.439993  1.720280  1.269624  1.849994  2.080546
-  # [3,] 33.461366 37.990358 38.005312 39.988865 20.009260 20.019368 33.468581 32.998939
-
-#            [,1]      [,2]      [,3]      [,4]      [,5]      [,6]      [,7]      [,8]
-#  [1,]  4.399770  5.599672  3.700505  3.499609  5.900187  3.499984  3.099655  3.799794
-#  [2,]  1.270024  1.519932  1.730157  1.440002  1.720174  1.270263  1.849999  2.079726
-#  [3,] 33.463184 38.000050 37.998270 39.999982 20.001136 19.999086 33.464936 32.997361
-
-```
-
 
 
 

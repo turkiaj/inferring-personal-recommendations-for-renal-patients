@@ -909,6 +909,32 @@ mebn.adjusted_effects_from_multivariate <- function(fit, targetindex, person_id,
 
 ##################################################
 
+mebn.personal_effects_from_multivariate <- function(fit, targetindex, person_id, group_id)
+{
+  #  mean      se_mean         sd          10%         90%     n_eff      Rhat
+  ms <- rstan::summary(fit, pars=c(paste0("b"), paste0("personal_effect")), probs=c(0.05, 0.95), na.rm = TRUE)
+  
+  # for mode
+  b_params <- grep(paste0("b\\[",person_id,",", targetindex, ","), rownames(ms$summary), value = TRUE)
+  b_draws <- rstan::extract(fit, pars = b_params)
+  personal_effect_params <- grep(paste0("personal_effect\\[",person_id,",", targetindex, ","), rownames(ms$summary), value = TRUE)
+  personal_effect_draws <- rstan::extract(fit, pars = personal_effect_params)
+  
+  ModelSummary <- within(list(),
+                          {
+                            b       <- round(ms$summary[startsWith(rownames(ms$summary),paste0("b[",person_id,",", targetindex, ",")),1], 5)
+                            b_lCI   <- round(ms$summary[startsWith(rownames(ms$summary),paste0("b[",person_id,",", targetindex, ",")),4], 5)
+                            b_uCI   <- round(ms$summary[startsWith(rownames(ms$summary),paste0("b[",person_id,",", targetindex, ",")),5], 5)
+                            personal_effect         <- round(ms$summary[startsWith(rownames(ms$summary), paste0("personal_effect[",person_id,",", targetindex, ",")),1], 5)
+                            personal_effect_lCI     <- round(ms$summary[startsWith(rownames(ms$summary), paste0("personal_effect[",person_id,",", targetindex, ",")),4], 5)
+                            personal_effect_uCI     <- round(ms$summary[startsWith(rownames(ms$summary), paste0("personal_effect[",person_id,",", targetindex, ",")),5], 5)
+                          })
+  
+  return(ModelSummary)
+}
+
+##################################################
+
 mebn.personal_effects_from_multivariate_namedtargets <- function(fit, targetname, person_id)
 {
   #  mean      se_mean         sd          10%         90%     n_eff      Rhat
