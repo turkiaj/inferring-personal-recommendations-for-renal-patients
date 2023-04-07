@@ -173,7 +173,7 @@ patients <- as.numeric(levels(dialysis_imputed$potilas))
 patient_folds <- split(patients, cut(seq_along(patients),number_of_folds,labels = FALSE))
 
 # number of fold
-f <- 4
+f <- 10
 
 fold <- patient_folds[[f]]
 
@@ -237,7 +237,7 @@ patients <- as.numeric(levels(dialysis_imputed$potilas))
 patient_folds <- split(patients, cut(seq_along(patients),number_of_folds,labels = FALSE))
 
 # number of fold
-f <- 3
+f <- 10
 fold <- patient_folds[[f]]
 fold_title <- paste0(f,"_",paste0(fold, collapse = "_"))
 
@@ -259,8 +259,8 @@ stanDat <- mebn.set_mv_two_level_model_parameters(predictor_columns, target_colu
 stanDat$n_s <- length(fold)
 
 # get prediction info
-#localfit <- readRDS(paste0("models/BLMM_gamma_mv_cross/cvmodels/",fold_title,"/pk_fppi_palb_blmm.rds"))
-localfit <- readRDS(paste0("/media/sf_cvmodels/",fold_title,"/pk_fppi_palb_blmm.rds"))
+localfit <- readRDS(paste0("models/BLMM_gamma_mv_cross/cvmodels/",fold_title,"/pk_fppi_palb_blmm.rds"))
+#localfit <- readRDS(paste0("/media/sf_cvmodels/",fold_title,"/pk_fppi_palb_blmm.rds"))
 
 pmodel <- rstan::extract(localfit)
 
@@ -292,7 +292,7 @@ saveRDS(pred_result, paste0("models/BLMM_gamma_mv_cross/cvmodels/",fold_title,"/
 ```
 
 
-```{r}
+```{r insert_personal_predictions_to_graphs}
 library(igraph)
 library(rstan)
 source("mebn/v2/MEBNv2.r")
@@ -309,10 +309,10 @@ dialysis_imputed$hoitoryhma <- as.factor(dialysis_imputed$hoitomuoto)
 dialysis_imputed <- dialysis_imputed[order(dialysis_imputed$hoitoryhma, 
                                            dialysis_imputed$potilas, dialysis_imputed$havainto),]
 
-graph_person_id <- 11
-person_id <- 3
-f <- 3
-fold_title <- "3_1983_2303_2440"
+graph_person_id <- 37
+person_id <- 4
+f <- 10
+fold_title <- "10_9093_9135_9362_9464"
 
 subject_code <- levels(dialysis_imputed$potilas)[graph_person_id]
 print(subject_code)
