@@ -440,7 +440,7 @@ patients <- as.numeric(levels(dialysis_imputed$potilas))
 patient_folds <- split(patients, cut(seq_along(patients),number_of_folds,labels = FALSE))
 
 # number of fold
-f <- 1
+f <- 5
 fold <- patient_folds[[f]]
 fold_title <- paste0(f,"_",paste0(fold, collapse = "_"))
 
@@ -484,27 +484,29 @@ pred_result <- stan(file=stan_model_file, warmup = 1000, iter=2000, chains=4, ch
 
 saveRDS(pred_result, paste0("models/BLMM_gamma_mv_cross/cvcomparison/",fold_title,"/prediction_of_fold_",f,".rds"))
 
-#f1 <- rstan::extract(pred_result)
-
-#colMeans(f1$personal_effect)[1,,]
-
-#colMeans(pmodel$personal_effect)[1,,]
-
 ```
+
 ```{r Mahalanobis}
 library(Matrix)
 library(igraph)
 library(rstan)
 
-# Assume b_est is a vector of estimated personal coefficients for the new patient
 
 # Assume L is the estimated Cholesky matrix
-f <- 1
+f <- 5
 fold_title <- "1_382_480_885_1184"
+fold_title <- "2_1439_1581_1882_1960"
+fold_title <- "3_1983_2303_2440"
+fold_title <- "4_2459_2638_2714_2884"
+fold_title <- "5_2928_4025_4710_4741"
+
+#bestfit <- readRDS("models/BLMM_gamma_mv_cross/two_levels/pk_fppi_palb_blmm.rds")
+
 cvfit <- readRDS(paste0("/media/sf_cvmodels/",fold_title,"/pk_fppi_palb_blmm.rds"))
 
 cvmodel <- rstan::extract(cvfit)
 L_s <- colMeans(cvmodel$L_s)
+T_s <- colMeans(cvmodel$stacked_sigma_b_s)
 
 # Get estimate personal coefficients b_est for the new patient based on new data only
 obsfit <- readRDS(paste0("models/BLMM_gamma_mv_cross/cvcomparison/",fold_title,"/prediction_of_fold_",f,".rds"))
@@ -512,48 +514,38 @@ obsfit <- readRDS(paste0("models/BLMM_gamma_mv_cross/cvcomparison/",fold_title,"
 md_summary <- data.frame(matrix(ncol = 3, nrow = 0), row.names = NULL)
 
 # start index of all patients
-graph_person_id <- 1
+graph_person_id <- 16
 
 for (person_id in 1:4)
 {
   subject_code <- levels(dialysis_imputed$potilas)[graph_person_id]
   
-  b_est <- c()
+  b_obs <- c()
+  b_best <- c()
   
   for (c in 1:dim(assumedtargets)[1])
   {
-    target_column <- target_variables[c,]
-    target_name <- as.vector(target_column$Name)
-    
-    predictor_names <- assumedpredictors_fat_epros$Name
-    
-    pe <- mebn.personal_effects_from_multivariate(obsfit, c, person_id)
-    
-    p_int <- extract(obsfit, pars = c(paste0("personal_intercept[",person_id,",",c,"]")))
-    p_int_mean <- mean(unlist(p_int))
-    
-    b_est <- cbind(b_est, p_int_mean)
-  
-    for (p in 1:length(predictor_names))
-    {
-      predictor_name <- predictor_names[p]
-      
-      #vertex_name <- paste0("personal_", predictor_name, "_", target_name)
-      #print(vertex_name)
-      #print(pe$personal_effect[p])
-      
-      b_est <- cbind(b_est, pe$personal_effect[p])
-    }
+    pe_obs <- mebn.personal_effects_from_multivariate(obsfit, c, person_id)
+    b_obs <- c(b_obs, as.vector(pe_obs$b))
+  }
+
+  for (c in 1:dim(assumedtargets)[1])
+  {
+    pe_best <- mebn.personal_effects_from_multivariate(bestfit, c, person_id)
+    b_best <- c(b_best, as.vector(pe_best$b))
   }
   
-  # Estimate how far b_est is from distribution of previously learned reactions L_s 
+  # Estimate how far b_obs is from distribution of previously learned reactions L_s 
   # with Mahalanobis distance
   
-  C <- L_s %*% t(L_s)
-  inv_C <- solve(C) # 69 x 69
-  b_est <- as.vector(b_est)
+  D <- diag(T_s)
+  C <- D %*% L_s %*% t(L_s) %*% t(D)
   
-  Mahalanobis_distance <- sqrt(t(b_est) %*% inv_C %*% b_est)
+  inv_C <- solve(C) # 69 x 69
+  
+  b_diff <- b_obs - b_best
+  
+  Mahalanobis_distance <- sqrt(t(b_diff) %*% inv_C %*% b_diff)
   
   personal_md <- cbind(graph_person_id, subject_code, Mahalanobis_distance)
   md_summary <- rbind(md_summary, personal_md)
@@ -562,7 +554,19 @@ for (person_id in 1:4)
 }
 
 colnames(md_summary) <- c("person_id", "subject", "mahalanobis_distance")
-saveRDS(md_summary, "model_evaluation/mahalanobis_distance_1.rds")
+saveRDS(md_summary, "model_evaluation/mahalanobis_distance_5.rds")
+
+
+md1 <- readRDS("model_evaluation/mahalanobis_distance_1.rds")
+md2 <- readRDS("model_evaluation/mahalanobis_distance_2.rds")
+md3 <- readRDS("model_evaluation/mahalanobis_distance_3.rds")
+md4 <- readRDS("model_evaluation/mahalanobis_distance_4.rds")
+md5 <- readRDS("model_evaluation/mahalanobis_distance_5.rds")
+
+md <- rbind(md1,md2,md3,md4,md5)
+md
+
+saveRDS(md, "model_evaluation/mahalanobis_distance.rds")
 
 ```
 
@@ -672,7 +676,7 @@ error_analysis.df$avg_error <- rowMeans(cbind(error_analysis.df$pk_error, error_
 # Hypoteesi: virhe kasvaa jos holdout-potilas reagoi eri tavalla kuin malli ennustaa
 # Verrataan CV-mallin yleistä vaikutusta ja sillä CV-foldilla ennustettua henkilökohtaista vaikutusta
 
-md_summary <- readRDS("model_evaluation/mahalanobis_distance_1.rds")
+md_summary <- readRDS("model_evaluation/mahalanobis_distance.rds")
 
 error_join.df <- error_analysis.df %>% inner_join(md_summary, by="subject")
 
@@ -702,6 +706,38 @@ ggplot(plot.df) +
                 linewidth=0.5)
 
 ```
+
+
+```{r error_plot}
+library(dplyr)
+library(ggplot2)
+library(igraph)
+
+cv_mse_summary <- readRDS("model_evaluation/NRMSE_comparison_mv_cv_models.rds")
+mse_summary <- readRDS("model_evaluation/NRMSE_comparison_mv_models.rds")
+mse_summary <- mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels",]
+
+error_analysis.df <- mse_summary %>%
+  inner_join(cv_mse_summary, by = "subject") %>%
+  mutate(pk_error = as.numeric(pk_nrmse.x)) %>% 
+  mutate(pk_cv_error = as.numeric(pk_nrmse.y)) %>% 
+  mutate(fppi_error = as.numeric(fppi_nrmse.x)) %>% 
+  mutate(fppi_cv_error = as.numeric(fppi_nrmse.y)) %>% 
+  mutate(palb_error = as.numeric(palb_nrmse.x)) %>% 
+  mutate(palb_cv_error = as.numeric(palb_nrmse.y)) %>%
+  select(subject, pk_error, pk_cv_error, fppi_error, fppi_cv_error, palb_error, palb_cv_error)
+
+error_analysis.df$avg_error <- rowMeans(cbind(error_analysis.df$pk_error, error_analysis.df$fppi_error, error_analysis.df$palb_error), na.rm = TRUE)
+error_analysis.df$avg_cv_error <- rowMeans(cbind(error_analysis.df$pk_cv_error, error_analysis.df$fppi_cv_error, error_analysis.df$palb_cv_error), na.rm = TRUE)
+
+head(error_analysis.df)
+
+ggplot(error_analysis.df) +
+  geom_point(aes(x = subject, y = avg_error), color = "blue") +
+  geom_point(aes(x = subject, y = avg_cv_error), color = "red") 
+
+```
+
 
 #TODO: remove
 

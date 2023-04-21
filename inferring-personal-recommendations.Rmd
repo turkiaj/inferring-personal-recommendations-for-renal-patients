@@ -784,9 +784,14 @@ write.csv2(mse_summary, file="model_evaluation/NRMSE_comparison_mv_models.csv", 
 
 uni_mse_summary <- readRDS("model_evaluation/NRMSE_comparison_uni_model.rds")
 mse_summary <- readRDS("model_evaluation/NRMSE_comparison_mv_models.rds")
+cv_mse_summary <- readRDS("model_evaluation/NRMSE_comparison_mv_cv_models.rds")
 
 uni_pk_mse <- mean(as.numeric(uni_mse_summary$pk_nrmse), na.rm=TRUE)
 uni_fppi_mse <- mean(as.numeric(uni_mse_summary$fppi_nrmse), na.rm=TRUE)
+
+cv_pk_mse <- mean(as.numeric(cv_mse_summary[cv_mse_summary$reaction_model == "mv3_cross_two_levels_cv",]$pk_nrmse)) # 0.1696225
+cv_fppi_mse <- mean(as.numeric(cv_mse_summary[cv_mse_summary$reaction_model == "mv3_cross_two_levels_cv",]$fppi_nrmse)) # 0.2310911
+cv_palb_mse <- mean(as.numeric(cv_mse_summary[cv_mse_summary$reaction_model == "mv3_cross_two_levels_cv",]$palb_nrmse), na.rm=TRUE) # 0.06320297
 
 mv3c2_pk_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels",]$pk_nrmse)) # 0.004475995
 mv3c2_fppi_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3_cross_two_levels",]$fppi_nrmse)) # 0.006727212
@@ -799,8 +804,9 @@ mv3c1_palb_mse <- mean(as.numeric(mse_summary[mse_summary$reaction_model == "mv3
 unic1 <- cbind("separate_pk_fppi", uni_pk_mse, uni_fppi_mse, 0, mean(uni_pk_mse, uni_fppi_mse))
 mv3c1 <- cbind("mv3_cross_single_level", mv3c1_pk_mse, mv3c1_fppi_mse, mv3c1_palb_mse, mean(mv3c1_pk_mse, mv3c1_fppi_mse, mv3c1_palb_mse))
 mv3c2 <- cbind("mv3_cross_two_levels", mv3c2_pk_mse, mv3c2_fppi_mse, mv3c2_palb_mse, mean(mv3c2_pk_mse, mv3c2_fppi_mse, mv3c2_palb_mse))
+mv3cv <- cbind("mv3_cross_two_levels_cv", cv_pk_mse, cv_fppi_mse, cv_palb_mse, mean(cv_pk_mse, cv_fppi_mse, cv_fppi_mse))
 
-mse_table <- rbind(mv3c2, mv3c1, unic1)
+mse_table <- rbind(mv3c2, mv3cv, mv3c1, unic1)
 mse_table[,2:5] <- round(as.numeric(mse_table[,2:5]),3)
 
 kable(mse_table, "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3,align="lrrrr",
@@ -2133,6 +2139,13 @@ ggsave(paste0("figures/recommendation_plot_X50_B50.pdf"), plot = recommendation_
 
 ```
 
+## Personal recommendations based of predicted reactions
+
+```{r cross-validation-recommendations, eval=TRUE, include=TRUE, fig.align="center", out.height="\\textheight", out.width="100%", echo=FALSE, fig.cap="The figure shows personal recommendations of potassium and phosphorous intake ($\\hat{Q}^{min}-\\hat{Q}^{max}$) based on cross-validation predictions of nutrition effects, $\\hat{b}_k$. Other parameters of the figure are similar to Supplementary Fig. S4. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org)."}
+knitr::include_graphics("figures/recommendation_plot_cross-validation_X50_B50.pdf")
+```
+
+
 ## Personal recommendation for a patient
 
 ```{r nuts_intake_method_figure, cache=FALSE, eval=TRUE, echo=FALSE,message=FALSE, warning=FALSE, fig.cap="Figure shows detailed intake recommendation for patient 10 from the previous recommendation table. The intake plot on the left shows the posterior samples of diet configurations that result concentrations of plasma potassium (P-K), fasting plasma phosphate (fP-Pi) and plasma albumin (P-Alb) to stay within their recommended limits. These levels are marked with vertical solid lines in the concentration panels. The black point in the middle of intake plot represents the patient's current potassium and phosphorous intake. Current concentrations matching this intake are shown with dashed vertical lines. Reported recommendation is shown with a rectangle that contains $95\\%$ of diet proposals that result recommended concentrations over $90\\%$ accuracy. Colouring of the rectangle sides match the concentration estimates in the right hand panels. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org)."}
@@ -2333,6 +2346,7 @@ for (person_id in 36:36) {
   } # file exists
 }
 ```
+
 
 ```{r plot_effect_density,eval=FALSE,echo=FALSE}
 library(rstan)
