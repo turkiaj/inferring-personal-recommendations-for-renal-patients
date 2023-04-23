@@ -430,7 +430,7 @@ colnames(personal_targets) <- c("person_id", "pk_lower_limit", "fppi_lower_limit
 ```
 
 # Overview of personal recommendations 
-```{r reasoning_plot_ridges, fig.height=8.5, fig.width=8, cache=FALSE,echo=FALSE, message=FALSE, warning=FALSE,fig.cap="The figure shows in two left-most panels personal recommendations of potassium and phosphorous intake ($\\hat{Q}^{min}-\\hat{Q}^{max}$) with predictive distributions of $\\hat{Q}$ illustrated in the background. Each row shows a numeric label of the patient and the type of patient's dialysis treatment (HD = hospital hemodialysis, HHD = home hemodialysis, PD = peritoneal dialysis). Personal recommendations are given for those patients whose resulting plasma concentration levels could be predicted in either over 90\\% probability. Three right-most panels show the estimated concentrations that match the recommended intake. In these panels, grey bars indicate the estimated concentration without the effect of potassium and phosphorous intake, $\\mu_{q0}$. Blue bars indicate the range of concentration that is resulted from modifying phosphorous and potassium intake. It is required that these simulated concentrations stay within the personal target ranges denoted with vertical black lines. The dark blue bar indicates satisfying this requirement in $P^{max} > 90\\%$ confidence and $P^{max} > 80\\%$ confidence would be indicated with light blue, but there aren't any in the results. The best exact probabilities $P^{max}_m$ are shown with percentage figures. Red bars indicate that even the best concentration estimation has $P^{max} < 80\\%$ confidence and personal recommendations are not given for these patients. For these patients, the red and blue bars show the whole reachable ranges. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org)."}
+```{r reasoning_plot_ridges, fig.height=8.5, fig.width=8, cache=FALSE,echo=FALSE, message=FALSE, warning=FALSE,fig.cap="The figure shows personal recommendations of potassium and phosphorous intake ($\\hat{Q}^{min}-\\hat{Q}^{max}$) based on cross-validation predictions of nutrition effects, $\\hat{b}_k$. Other parameters of the figure are similar to Supplementary Fig. S4. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org).}
 
 library(ggridges)
 library(ggplot2)
@@ -514,9 +514,6 @@ personal_effect_summary$person_id <- as.character(personal_effect_summary$person
 muq0_summary$person_id <- as.character(muq0_summary$person_id)
 personal_targets$person_id <- as.character(personal_targets$person_id)
 
-# TODO: Tallenna myös osittain hyväksytyt pitoisuudet jotta tämä toimisi. näyttäisi kivemmalta.
-# nyt _recejä ei ole tallessa
-
 #  mutate(pk_low_rec = ifelse(max_pk_prob >= 0.8, pk_low_rec, pk_low)) %>%
 #  mutate(pk_high_rec = ifelse(max_pk_prob >= 0.8, pk_high_rec, pk_high)) %>%
 
@@ -559,12 +556,19 @@ no_valid <- conc_reasoning.df %>%
 
 conc_reasoning.df[conc_reasoning.df$person_id %in% as.vector(no_valid$person_id),] <- no_valid
 
+# Use same ordering of patients than the main figure
+person_ordering.df <- readRDS("patient_summary/person_ordering.df.rds")
+
+# add person_order-columns
+intake_reasoning.df <- intake_reasoning.df %>% inner_join(person_ordering.df, by="person_id")
+conc_reasoning.df <- conc_reasoning.df %>% inner_join(person_ordering.df, by="person_id")
+
 ProbColorPalette <- c("#F44336","#4CAF50","#81C784")
 ProbColorPalette <- c("#F44336","#0000CD","#00BFFF") # <80%, 90%, 80%
 
 #      geom_text(stat = "unique", aes(x=2500, label=pot_text), size=2.5, width=0.6) +
 
-pot_plot <- ggplot(intake_reasoning.df, aes(x = pot, y = reorder(person_text, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000), group = person_id)) +
+pot_plot <- ggplot(intake_reasoning.df, aes(x = pot, y = reorder(person_text, person_order), group = person_id)) +
       geom_density_ridges(aes(rel_min_height=0.01, scale = 1.0), fill = "#00BFC4", color = "#009FA4") +
       theme_bw() +
       scale_x_continuous(breaks=c(0,2500,5800), limits = c(0,5850)) +
@@ -574,7 +578,7 @@ pot_plot <- ggplot(intake_reasoning.df, aes(x = pot, y = reorder(person_text, ma
       theme(axis.text.x = element_text(size=6),axis.title = element_text(size=9), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
       ggtitle("Pot. (mg/d)")
 
-pho_plot <- ggplot(intake_reasoning.df, aes(x = pho, y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000), group = person_id)) +
+pho_plot <- ggplot(intake_reasoning.df, aes(x = pho, y = reorder(person_id, person_order), group = person_id)) +
       geom_density_ridges(aes(rel_min_height=0.01, scale = 1.3), fill = "#00BFC4", color = "#009FA4") +
       theme_bw() +
       scale_x_continuous(breaks=c(0,1000,2550), limits = c(0,3000)) +
@@ -584,7 +588,7 @@ pho_plot <- ggplot(intake_reasoning.df, aes(x = pho, y = reorder(person_id, max_
       theme(axis.text.x = element_text(size=6),axis.title = element_text(size=9), axis.text.y = element_blank(), plot.title = element_text(size=9)) +
       ggtitle("Phosp. (mg/d)")
 
-pk_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
+pk_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, person_order)), group = accepted) +
       geom_bar(stat='identity', aes(x=pk_mu_q0), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
       geom_bar(stat='identity', aes(x=pk_high_rec, fill=pk_accepted), width=0.3, show.legend = FALSE) +
       geom_bar(stat='identity', aes(x=pk_low_rec), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
@@ -600,7 +604,7 @@ pk_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom
       theme(axis.text.y = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=9), plot.title = element_text(size=9)) +
       ggtitle("P-K (mmol/l)")
 
-fppi_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
+fppi_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, person_order)), group = accepted) +
       geom_bar(stat='identity', aes(x=fppi_mu_q0), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
       geom_bar(stat='identity', aes(x=fppi_high_rec, fill=fppi_accepted), width=0.3, show.legend = FALSE) +
       geom_bar(stat='identity', aes(x=fppi_low_rec), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
@@ -616,7 +620,7 @@ fppi_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_rec
       labs(x = element_blank(), y = element_blank()) +
       ggtitle("fP-Pi (mmol/l)")
 
-palb_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
+palb_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, person_order)), group = accepted) +
       geom_bar(stat='identity', aes(x=palb_mu_q0), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
       geom_bar(stat='identity', aes(x=palb_high_rec, fill=palb_accepted), width=0.3, show.legend = FALSE) +
       geom_bar(stat='identity', aes(x=palb_low_rec), width=0.6, fill=mu_q0_color, color=mu_q0_color, show.legend = FALSE) +

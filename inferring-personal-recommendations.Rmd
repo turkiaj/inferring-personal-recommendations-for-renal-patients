@@ -2137,14 +2137,13 @@ palb_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_rec
 recommendation_plot <- grid.arrange(pot_plot, pho_plot, pk_plot, fppi_plot, palb_plot, ncol=5,nrow=1, padding=0,widths=c(1.32,1,1,1,1))
 ggsave(paste0("figures/recommendation_plot_X50_B50.pdf"), plot = recommendation_plot, width = 6, height = 6, scale = 1)
 
+# This vector is used to arrange the predicted recommendation is the same order for easy comparison
+
+person_id_reorder <- conc_reasoning.df$max_recom_norm + as.numeric(conc_reasoning.df$accepted_recommandation_probability) * 100000
+person_ordering.df <- data.frame(person_id = conc_reasoning.df$person_id, person_order = person_id_reorder)
+saveRDS(person_ordering.df, "patient_summary/person_ordering.df.rds")
+
 ```
-
-## Personal recommendations based of predicted reactions
-
-```{r cross-validation-recommendations, eval=TRUE, include=TRUE, fig.align="center", out.height="\\textheight", out.width="100%", echo=FALSE, fig.cap="The figure shows personal recommendations of potassium and phosphorous intake ($\\hat{Q}^{min}-\\hat{Q}^{max}$) based on cross-validation predictions of nutrition effects, $\\hat{b}_k$. Other parameters of the figure are similar to Supplementary Fig. S4. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org)."}
-knitr::include_graphics("figures/recommendation_plot_cross-validation_X50_B50.pdf")
-```
-
 
 ## Personal recommendation for a patient
 
@@ -2345,6 +2344,12 @@ for (person_id in 36:36) {
     
   } # file exists
 }
+```
+
+## Personal recommendations for predicted reactions
+
+```{r cross-validation-recommendations, eval=TRUE, include=TRUE, fig.align="center", out.height="\\textheight", out.width="100%", echo=FALSE, fig.cap="The figure shows personal recommendations of potassium and phosphorous intake ($\\hat{Q}^{min}-\\hat{Q}^{max}$) based on cross-validation predictions of nutrition effects, $\\hat{b}_k$. Other parameters of the figure are similar to Supplementary Fig. S4. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org)."}
+knitr::include_graphics("figures/recommendation_plot_cross-validation_X50_B50.pdf")
 ```
 
 
