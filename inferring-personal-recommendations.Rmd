@@ -1,5 +1,5 @@
 ---
-title: "Personal diet recommendation"
+title: "Inferring personal intake recommendations of phosphorous and potassium for end-stage renal failure patients by simulating with hierarchical Bayesian multivariate model"
 subtitle: "Supplementary Materials"
 author:
 - JARI TURKIA \textsuperscript{1,2}
