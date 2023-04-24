@@ -2352,6 +2352,11 @@ for (person_id in 36:36) {
 knitr::include_graphics("figures/recommendation_plot_cross-validation_X50_B50.pdf")
 ```
 
+```{r nrmse_plot, fig.cap="Figure shows normalized root mean square error (NRMSE) of the two-level model for each patient. Blue points indicate the in-sample error and red points indicate the error from cross-validation prediction. The lines between the points highlight the increased error between in-sample modelling and the prediction.  Alternating colors of the lines denote the folds of the cross-validation."}
+knitr::include_graphics("figures/nrmse_plot.pdf")
+```
+
+
 
 ```{r plot_effect_density,eval=FALSE,echo=FALSE}
 library(rstan)

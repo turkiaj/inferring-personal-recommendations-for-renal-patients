@@ -712,6 +712,7 @@ ggplot(plot.df) +
 library(dplyr)
 library(ggplot2)
 library(igraph)
+library(viridis)
 
 cv_mse_summary <- readRDS("model_evaluation/NRMSE_comparison_mv_cv_models.rds")
 mse_summary <- readRDS("model_evaluation/NRMSE_comparison_mv_models.rds")
@@ -730,11 +731,18 @@ error_analysis.df <- mse_summary %>%
 error_analysis.df$avg_error <- rowMeans(cbind(error_analysis.df$pk_error, error_analysis.df$fppi_error, error_analysis.df$palb_error), na.rm = TRUE)
 error_analysis.df$avg_cv_error <- rowMeans(cbind(error_analysis.df$pk_cv_error, error_analysis.df$fppi_cv_error, error_analysis.df$palb_cv_error), na.rm = TRUE)
 
-head(error_analysis.df)
+error_analysis.df$patient_id <- seq(1:37)
+error_analysis.df$fold <- cut(seq_along(patients),number_of_folds,labels = FALSE)
+error_analysis.df$fold_color <- factor(error_analysis.df$fold %% 2)
 
 ggplot(error_analysis.df) +
-  geom_point(aes(x = subject, y = avg_error), color = "blue") +
-  geom_point(aes(x = subject, y = avg_cv_error), color = "red") 
+  geom_point(aes(y = reorder(subject, patient_id), x = avg_error), color = "#799fcb") +
+  geom_point(aes(y = subject, x = avg_cv_error), color = "#f9665e") +
+  geom_line(aes(y = subject, x = avg_cv_error), color = "#f9665e") +
+  geom_segment(aes(y = reorder(subject, patient_id), yend = subject, x = avg_error, xend = avg_cv_error, group = subject, color = fold_color), linetype = "solid") +
+  theme_bw() +
+  scale_fill_viridis(discrete = TRUE) + 
+  labs(x = "NRMSE", y = "Patient") 
 
 ```
 
