@@ -640,6 +640,11 @@ palb_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, person_
 recommendation_plot <- grid.arrange(pot_plot, pho_plot, pk_plot, fppi_plot, palb_plot, ncol=5,nrow=1, padding=0,widths=c(1.32,1,1,1,1))
 ggsave(paste0("figures/recommendation_plot_cross-validation_X50_B50.pdf"), plot = recommendation_plot, width = 6, height = 6, scale = 1)
 
+#library(Cairo)
+#Cairo(file = "figures/FigS6.tiff", type = "tiff", width = 6, height = 6, bg="white", units = "in", res = 400)
+#grid.arrange(pot_plot, pho_plot, pk_plot, fppi_plot, palb_plot, ncol=5,nrow=1, padding=0,widths=c(1.32,1,1,1,1))
+#dev.off()
+
 ```
 
 ## Personal recommendation for a patient

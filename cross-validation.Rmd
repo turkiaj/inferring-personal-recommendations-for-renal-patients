@@ -748,6 +748,11 @@ nrmse_plot <- ggplot(error_analysis.df) +
 nrmse_plot
 ggsave("figures/nrmse_plot.pdf", plot = nrmse_plot)
 
+#library(Cairo)
+Cairo(file = "figures/FigS7.tiff", type = "tiff", width = 4, height = 4, bg="white", units = "in", res = 300)
+print(nrmse_plot)
+dev.off()
+
 ```
 
 
