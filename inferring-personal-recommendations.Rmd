@@ -541,9 +541,9 @@ for (i in 1:nrow(rows_with_missing_palb)) {
   }
 }
 
-dialysis2 <- dialysis
-dialysis2$palb <- original_palb
-saveRDS(dialysis2, "data/DIALYSIS_imputed_palb.rds")
+#dialysis2 <- dialysis
+#dialysis2$palb <- original_palb
+#saveRDS(dialysis2, "data/DIALYSIS_imputed_palb.rds")
 ```
 
 ```{r, palb_imputation3, echo=FALSE, eval=FALSE}
@@ -1477,30 +1477,6 @@ effect_summary$sigma_g_lCI <- as.numeric(effect_summary$sigma_g_lCI)
 effect_summary$sigma_g_uCI <- as.numeric(effect_summary$sigma_g_uCI)
 effect_summary$personal_effect <- as.numeric(effect_summary$personal_effect)
 
-# top_effect_summary <- effect_summary %>%
-#   group_by(effect) %>% 
-#   mutate(personal_max = personal_effect[which.max(personal_effect)]) %>% 
-#   mutate(personal_min = personal_effect[which.min(personal_effect)]) %>% 
-#   mutate(personal_variation = personal_max - personal_min) %>% 
-#   ungroup() %>%
-#   arrange(desc(personal_variation)) %>%
-#   select(effect, personal_min, personal_max, personal_variation) %>%
-#   distinct()
-# 
-# top_effect_summary <- effect_summary %>%
-#   group_by(effect) %>% 
-#   mutate(personal_max = personal_effect[which.max(personal_effect)],
-#          personal_min = personal_effect[which.min(personal_effect)],
-#          lCI_max = personal_effect_lCI[which.max(personal_effect)],
-#          uCI_max = personal_effect_uCI[which.max(personal_effect)],
-#          lCI_min = personal_effect_lCI[which.min(personal_effect)],
-#          uCI_min = personal_effect_uCI[which.min(personal_effect)]) %>% 
-#   mutate(personal_variation = personal_max - personal_min) %>% 
-#   ungroup() %>%
-#   arrange(desc(personal_variation)) %>%
-#   select(effect, personal_min, lCI_min, uCI_min, personal_max, lCI_max, uCI_max, personal_variation) %>%
-#   distinct()
-
 top_effect_summary <- effect_summary %>%
   group_by(effect) %>% 
   mutate(personal_max = personal_effect[which.max(personal_effect)],
@@ -1509,10 +1485,16 @@ top_effect_summary <- effect_summary %>%
          uCI_max = personal_effect_uCI[which.max(personal_effect)],
          lCI_min = personal_effect_lCI[which.min(personal_effect)],
          uCI_min = personal_effect_uCI[which.min(personal_effect)],
+         sigma_g = sigma_g[which.min(personal_effect)],
+         sigma_g_lCI = sigma_g_lCI[which.min(personal_effect)],
+         sigma_g_uCI = sigma_g_uCI[which.min(personal_effect)],
+         sigma_b = sigma_b[which.min(personal_effect)],
+         sigma_b_lCI = sigma_b_lCI[which.min(personal_effect)],
+         sigma_b_uCI = sigma_b_uCI[which.min(personal_effect)],
          personal_abs = max(abs(personal_min), abs(personal_max))) %>% 
   mutate(personal_variation = personal_max - personal_min) %>% 
   arrange(desc(personal_abs), desc(personal_variation)) %>%
-  select(effect, personal_min, personal_max, lCI_min, uCI_min, lCI_max, uCI_max, personal_abs, personal_variation) %>%
+  select(effect, personal_min, personal_max, lCI_min, uCI_min, lCI_max, uCI_max, personal_abs, personal_variation, sigma_g, sigma_g_lCI, sigma_g_uCI, sigma_b, sigma_b_lCI, sigma_b_uCI) %>%
   distinct()
 
 # - pretty name lookup
@@ -1531,15 +1513,20 @@ d <- 2
 top_effect_summary$personal_min <- paste0(round(as.numeric(top_effect_summary$personal_min),d), " [", round(as.numeric(top_effect_summary$lCI_min), d), "; ", round(as.numeric(top_effect_summary$uCI_min), d), "]")
 
 top_effect_summary$personal_max <- paste0(round(as.numeric(top_effect_summary$personal_max),d), " [", round(as.numeric(top_effect_summary$lCI_max), d), "; ", round(as.numeric(top_effect_summary$uCI_max), d), "]")
+
+top_effect_summary$sigma_g <- paste0(round(as.numeric(top_effect_summary$sigma_g),d), " [", round(as.numeric(top_effect_summary$sigma_g_lCI), d), "; ", round(as.numeric(top_effect_summary$sigma_g_uCI), d), "]")
+
+top_effect_summary$sigma_b <- paste0(round(as.numeric(top_effect_summary$sigma_b),d), " [", round(as.numeric(top_effect_summary$sigma_b_lCI), d), "; ", round(as.numeric(top_effect_summary$sigma_b_uCI), d), "]")
+
 ```
 
 ```{r top_effect_summary_table,echo=FALSE, cache=FALSE}
 # Table shows 20 effects that have highest variation between patients by comparing minimum and maximum of expected effect strength.
 
-kable(top_effect_summary[1:20, c(10,2,3)], "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect", "Sample min", "Sample max")) %>%
+kable(top_effect_summary[1:20, c(16,2,3,10,13)], "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect", "Study min.", "tudy max.","Sigma_g","Sigma_b")) %>%
     kable_styling(latex_options = "HOLD_position") %>%
-    kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) %>%
-    add_header_above(c(" " = 1, "Expected personal effect strength" = 2), escape = F) %>%
+    kable_styling(latex_options = c("basic", "condensed"), full_width = TRUE) %>%
+    add_header_above(c(" " = 1, "Expected personal effect strength" = 2, "Inter-treatment/patient variation"), escape = F) %>%
     row_spec(0,bold=TRUE) %>%
     save_kable(file = "tables/top_effect_summary_table.pdf", keep_tex = TRUE)
 ```
