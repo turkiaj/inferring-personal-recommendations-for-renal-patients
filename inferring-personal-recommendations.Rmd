@@ -581,6 +581,8 @@ write.graph(dialdiet_gamma_mv3,
 Finally, we consider also the effect of dialysis treatment type as new level of grouping in data. This allows us to estimate average effects of nutrition for each treatment type and then also personal effects within those treatments.
 
 ```{r graph_with_gamma_qr_mvcross_two_levels, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+source("mebn/v2/MEBNv2.r")
+
 pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
 no_holdout <- rep(0, nrow(dialysis_imputed))
 
@@ -591,9 +593,13 @@ dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
 # add the dialysis treatment type as a grouping factor
 dialysis_imputed$hoitoryhma <- as.factor(dialysis_imputed$hoitomuoto)
 
+dialysis_imputed$potilas <- as.factor(dialysis_imputed$potilas)
+
 # and sort the data by treatment/patient/observation
 dialysis_imputed <- dialysis_imputed[order(dialysis_imputed$hoitoryhma, 
                                            dialysis_imputed$potilas, dialysis_imputed$havainto),]
+
+# non-centered version: stan_model_file = "mebn/v2/BLMM_gamma_two_level_grouping.stan",
 
 dialdiet_gamma_mv3_two_level <- mebn.bipartite_two_level_multivariate(
                                    reaction_graph = initial_graph, 
@@ -607,11 +613,10 @@ dialdiet_gamma_mv3_two_level <- mebn.bipartite_two_level_multivariate(
                                    local_model_cache = 
                                      "models/BLMM_gamma_mv_cross/two_levels", 
                                    stan_model_file = 
-                                     "mebn/v2/BLMM_gamma_two_level_grouping.stan",
+                                     "mebn/v2/BLMM_gamma_two_level_centered.stan",
                                    normalize_values = TRUE)
 
-write.graph(dialdiet_gamma_mv3_two_level, 
-            "graphs/dialysis_gamma_two_level_grouping.graphml", "graphml")
+write.graph(dialdiet_gamma_mv3_two_level, "graphs/dialysis_gamma_two_level_centered.graphml", "graphml")
 ```
 
 # Model analysis
@@ -2392,111 +2397,25 @@ knitr::include_graphics("figures/recommendation_plot_cross-validation_X50_B50.pd
 knitr::include_graphics("figures/nrmse_plot.pdf")
 ```
 
-
-
-```{r plot_effect_density,eval=FALSE,echo=FALSE}
+```{r}
 library(rstan)
-library(ggplot2)
+library(bayesplot)
+source("mebn/v2/MEBNv2.r")
 
-#      "verenrasvojenlaakitys" "diabeteslaakitys"      "aktdvit"               "fosforinsitoja"        "renavit"               "hhepros"               "rasvaepros"           
-# [8]  "mufaepros"             "pufaepros"             "protepros"             "safaepros"             "kuitu"                 "protgkg"               "sukupuoli"            
-# [15] "ekcalkg"               "kalsium"               "fosfori"               "kalium"                "suola"                 "natrium"               "vesi"                 
-# [22] "dvit"
+twolvl_fit <- mebn.get_localfit(target_name = "pk_fppi_palb", local_model_cache = "models/BLMM_gamma_mv_cross/two_levels/")
 
-# assumedpredictors_fat_epros Name
+p <- mebn.multivariate_dens_overlays("models/BLMM_gamma_mv_cross/two_levels/", assumedtargets, dialysis) 
+p
 
-# This block can be used for inspecting the effect posteriors in detail
+sumstats <- summary(twolvl_fit)
 
-#twolvl_fit <- mebn.get_localfit(target_name = "pk_fppi_palb", local_model_cache = "models/BLMM_gamma_mv_cross/two_levels/")
+eff <- na.omit(sumstats$summary[,9])
+c(min(eff),mean(eff),max(eff))  # 5.588204  580.998852 8609.589616
 
-person_id <- 10
-subject_code <- "2303"
+rhat <- na.omit(sumstats$summary[,10])
+c(min(rhat),mean(rhat),max(rhat)) # 0.9994999 1.0090897 1.7160137
 
-group_id <- as.numeric(unique(dialysis[dialysis$potilas == subject_code,]$hoitoryhma))
-
-group_id <- 3
-                              
-pred <- "pufaepros"
-idx <- which(assumedpredictors_fat_epros$Name == pred)
-palb <- 3
-
-beta <- rstan::extract(twolvl_fit, pars = c(paste0("beta[",palb,",",idx,"]")))
-group_effect <- rstan::extract(twolvl_fit, pars = c(paste0("group_effect[",group_id,",",palb,",",idx,"]")))
-personal_effect <- rstan::extract(twolvl_fit, pars = c(paste0("personal_effect[",person_id,",",palb,",",idx,"]")))
-
-dens1 <- as.data.frame(beta[[1]])
-colnames(dens1) <- c("effect")
-dens1$level <- "general"
-
-dens2 <- as.data.frame(group_effect[[1]])
-colnames(dens2) <- c("effect")
-dens2$level <- "PD_avg"
-
-dens3 <- as.data.frame(personal_effect[[1]])
-colnames(dens3) <- c("effect")
-dens3$level <- "personal"
-
-dens <- rbind(dens1,dens2,dens3)
-
-m1 <- mean(dens1$effect) 
-m2 <- median(dens$effect) 
-
-getmode <- function(v) {
-   uniqv <- unique(v)
-   uniqv[which.max(tabulate(match(v, uniqv)))]
-}
-
-m3 <- getmode(dens1$effect) 
-
-getmode_continuous <- function(v) {
-  d <- density(v)
-  d$x[which.max(d$y)]
-}
-
-m4 <- getmode_continuous(dens1$effect) # 0.1939
-
-ggplot(dens1, aes(x=effect, fill=level)) +
-  geom_density(alpha=.25) +
-  geom_vline(xintercept = m1, color = "red") +
-  geom_vline(xintercept = m2, color = "green") +
-  geom_vline(xintercept = m3, color = "blue") +
-  geom_vline(xintercept = m4, color = "yellow") 
-
-```
-```{r scatterplot_for_correlations, eval = FALSE, echo = FALSE}
-
-#m4 pufaepros - palb -2.24843
-
-fig_protepros <- ggplot() +
-  geom_point(data=dialysis, aes(y = palb, x=protepros, color=potilas), size=0.4, show.legend = FALSE) +
-  geom_line(data=dialysis, aes(y = palb, x=protepros, color=potilas), size=0.4, show.legend = FALSE)
-
-fig_protgkg <- ggplot() +
-  geom_point(data=dialysis, aes(y = palb, x=protgkg), size=0.4, show.legend = FALSE) +
-  geom_line(data=dialysis, aes(y = palb, x=protgkg, color=potilas), size=0.4, show.legend = FALSE) 
-
-fig_pufa <- ggplot() +
-  geom_point(data=dialysis, aes(y = palb, x=pufa, color=potilas), size=0.4, show.legend = FALSE) +
-  geom_line(data=dialysis, aes(y = palb, x=pufa, color=potilas), size=0.4, show.legend = FALSE)
-
-fig_pufaepros <- ggplot() +
-  geom_point(data=dialysis, aes(y = palb, x=mufaepros, color=potilas), size=0.4, show.legend = FALSE) +
-  geom_line(data=dialysis, aes(y = palb, x=mufaepros, color=potilas), size=0.4, show.legend = FALSE)
-
-p <- grid.arrange(fig_protepros, fig_protgkg, fig_pufaepros, fig_pufa, nrow = 2, ncol=2, padding=0)
-
-lm(palb ~ protgkg, dialysis) # 1.975
-lm(palb ~ protepros, dialysis) # 0.146
-lm(palb ~ pufa, dialysis) # 0.02345
-lm(palb ~ pufaepros, dialysis) # -0.08943
-
-fig_pufaepros
-
-person_id <- 36
-subject_code <- levels(dialysis$potilas)[person_id]
-  
-dialysis
-mean(dialysis[dialysis$potilas == subject_code,]$fosfori)
+mcmc_trace(twolvl_fit, pars = c("beta[1,1]"))
 
 ```
 
