@@ -260,6 +260,7 @@ pk_k_plot <- ggplot() +
   annotate("rect",ymin=-Inf, ymax=c(3.4), xmin=-Inf, xmax=Inf, alpha = .2) + 
   annotate("rect",ymin=c(4.7), ymax=Inf, xmin=-Inf, xmax=Inf, alpha = .2) + 
   theme_bw() +
+  theme(text = element_text(family = "Times New Roman")) +
   theme(axis.title.x = element_blank(), axis.text = element_text(size=6), axis.title = element_text(size=8)) 
 
 pk_p_plot <- ggplot() +
@@ -273,6 +274,7 @@ pk_p_plot <- ggplot() +
   annotate("rect",ymin=-Inf, ymax=c(3.4), xmin=-Inf, xmax=Inf, alpha = .2) + 
   annotate("rect",ymin=c(4.7), ymax=Inf, xmin=-Inf, xmax=Inf, alpha = .2) + 
   theme_bw() +
+  theme(text = element_text(family = "Times New Roman")) +
   theme(axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text = element_text(size=6), axis.title = element_text(size=8)) 
 
 fppi_k_plot <- ggplot() +
@@ -284,6 +286,7 @@ fppi_k_plot <- ggplot() +
   annotate("rect",ymax=Inf, ymin=c(1.8), xmin=-Inf, xmax=Inf, alpha = .2) + 
   labs(x = "Potassium (mg/d)", y = "fP-Pi (mmol/l)") + 
   theme_bw() +
+  theme(text = element_text(family = "Times New Roman")) +
   theme(axis.title.x = element_blank(), axis.text = element_text(size=6), axis.title = element_text(size=8))
 
 fppi_p_plot <- ggplot() +
@@ -295,6 +298,7 @@ fppi_p_plot <- ggplot() +
   annotate("rect",ymax=Inf, ymin=c(1.8), xmin=-Inf, xmax=Inf, alpha = .2) + 
   labs(x = "Phosphorus (mg/d)", y = "fP-Pi (mmol/l)") + theme(axis.title.x = element_blank()) +
   theme_bw() +
+  theme(text = element_text(family = "Times New Roman")) +
   theme(axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text = element_text(size=6), axis.title = element_text(size=8)) 
 
 palb_k <- ggplot() +
@@ -308,6 +312,7 @@ palb_k <- ggplot() +
   annotate("rect",ymin=-Inf, ymax=c(34), xmin=-Inf, xmax=Inf, alpha = .2) + 
   annotate("rect",ymin=c(48), ymax=Inf, xmin=-Inf, xmax=Inf, alpha = .2) + 
   theme_bw() +
+  theme(text = element_text(family = "Times New Roman")) +
   theme(axis.text = element_text(size=6), axis.title = element_text(size=8)) 
 
 palb_p <- ggplot() +
@@ -320,15 +325,17 @@ palb_p <- ggplot() +
   annotate("rect",ymin=c(48), ymax=Inf, xmin=-Inf, xmax=Inf, alpha = .2) + 
   labs(x = "Phosphorus (mg/d)", y = "P-Alb (g/l)") +
   theme_bw() +
+  theme(text = element_text(family = "Times New Roman")) +
   theme(axis.title.y = element_blank(), axis.text = element_text(size=6), axis.title = element_text(size=8)) 
 
 p <- grid.arrange(pk_k_plot, pk_p_plot, fppi_k_plot, fppi_p_plot, palb_k, palb_p, nrow = 3, ncol=2, padding=0)
 #ggsave("figures/data_scatterplot.pdf", plot = p, width = 6, height = 7, scale = 1)
 
 # Saving to TIFF only works from console
-#library(Cairo)
-#grid.arrange(pk_k_plot, pk_p_plot, fppi_k_plot, fppi_p_plot, palb_k, palb_p, nrow = 3, ncol=2, padding=0)
-#dev.off()
+library(Cairo)
+Cairo(file = "figures/FigS1.tiff", type = "tiff", width = 4, height = 4, bg="white", units = "in", res = 300)
+grid.arrange(pk_k_plot, pk_p_plot, fppi_k_plot, fppi_p_plot, palb_k, palb_p, nrow = 3, ncol=2, padding=0)
+dev.off()
 ```
 
 Aim of this analysis is to find such personal levels of potassium and phosphorous intakes that keep all these concentrations in their recommended levels marked with white regions, if possible. 
@@ -2226,9 +2233,9 @@ save_tiff_plot <- function(filename, width, height) {
   dev.off()
 }
 
-#save_tiff_plot(filename = "figures/Fig4.tiff", width = 5, height = 5)
+save_tiff_plot(filename = "figures/Fig4.tiff", width = 5, height = 5)
 
-save_pdf_plot(filename = "figures/Fig4.pdf", width = 6, height = 6)
+#save_pdf_plot(filename = "figures/Fig4.pdf", width = 6, height = 6)
 
 # ggsave(paste0("figures/Fig4.pdf"), plot = recommendation_plot, width = 6, height = 6, scale = 1)
 # 
