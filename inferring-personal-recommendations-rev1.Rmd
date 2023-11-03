@@ -839,7 +839,7 @@ kable(mse_table, "latex", escape = T, booktabs = T, row.names = FALSE, digits = 
 ```
 
 ```{r dialysis_gamma_mv_cross_2levels_ppc, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE, cache=TRUE, fig.cap="Posterior predictive check of the model where three concentrations and their parameters are stacked into one univariate model for estimating cross-model correlations."}
-#source("mebn/v3/MEBNv3.r")
+source("mebn/v2/MEBNv2.r")
 dialysis_imputed <- readRDS("data/DIALYSIS_imputed_palb.rds")
 pk_fppi_palb_targets <- datadesc_fat_epros[datadesc_fat_epros$Name %in% c('pk','fppi','palb'),]
 
@@ -847,13 +847,13 @@ pk_fppi_palb_targets[pk_fppi_palb_targets$Name == "pk",]$ScaleMax <- 7.5
 pk_fppi_palb_targets[pk_fppi_palb_targets$Name == "fppi",]$ScaleMax <- 5.0
 pk_fppi_palb_targets[pk_fppi_palb_targets$Name == "palb",]$ScaleMax <- 50
 
-p <- mebn.multivariate_dens_overlays("models/BLMM_gamma_mv_cross/two_levels", pk_fppi_palb_targets, dialysis_imputed) 
+p <- mebn.multivariate_dens_overlays("models/BLMM_gamma_mv_cross/two_levels/noncentered", pk_fppi_palb_targets, dialysis_imputed) 
 
-ggsave("figures/ppc_mv3_cross.pdf", plot = p, device = "pdf", width = 4, height = 4)
+ggsave("figures/Fig5.pdf", plot = p, device = "pdf", width = 4, height = 4)
 
 # Save TIFF. This only works from console.
 library(Cairo)
-Cairo(file = "figures/Fig4.tiff", type = "tiff", width = 4, height = 4, bg="white", units = "in", res = 300)
+Cairo(file = "figures/Fig5.tiff", type = "tiff", width = 4, height = 4, bg="white", units = "in", res = 400)
 print(p)
 dev.off()
 
@@ -1496,10 +1496,13 @@ top_effect_summary <- effect_summary %>%
          sigma_b = sigma_b[which.min(personal_effect)],
          sigma_b_lCI = sigma_b_lCI[which.min(personal_effect)],
          sigma_b_uCI = sigma_b_uCI[which.min(personal_effect)],
+         general_effect = general_effect[which.min(personal_effect)],
+         general_effect_lCI = general_effect_lCI[which.min(personal_effect)],
+         general_effect_uCI = general_effect_uCI[which.min(personal_effect)],
          personal_abs = max(abs(personal_min), abs(personal_max))) %>% 
   mutate(personal_variation = personal_max - personal_min) %>% 
   arrange(desc(personal_abs), desc(personal_variation)) %>%
-  select(effect, personal_min, personal_max, lCI_min, uCI_min, lCI_max, uCI_max, personal_abs, personal_variation, sigma_g, sigma_g_lCI, sigma_g_uCI, sigma_b, sigma_b_lCI, sigma_b_uCI) %>%
+  select(effect, personal_min, personal_max, lCI_min, uCI_min, lCI_max, uCI_max, personal_abs, personal_variation, sigma_g, sigma_g_lCI, sigma_g_uCI, sigma_b, sigma_b_lCI, sigma_b_uCI,general_effect,general_effect_lCI,general_effect_uCI) %>%
   distinct()
 
 # - pretty name lookup
@@ -1515,6 +1518,8 @@ top_effect_summary <- top_effect_summary %>% inner_join(effect_desc.df, by = "ef
 #top_effect_summary <- top_effect_summary %>% inner_join(effect_summary, by = "effect")
 d <- 2
 
+top_effect_summary$general <- paste0(round(as.numeric(top_effect_summary$general_effect),d), " [", round(as.numeric(top_effect_summary$general_effect_lCI), d), "; ", round(as.numeric(top_effect_summary$general_effect_uCI), d), "]")
+
 top_effect_summary$personal_min <- paste0(round(as.numeric(top_effect_summary$personal_min),d), " [", round(as.numeric(top_effect_summary$lCI_min), d), "; ", round(as.numeric(top_effect_summary$uCI_min), d), "]")
 
 top_effect_summary$personal_max <- paste0(round(as.numeric(top_effect_summary$personal_max),d), " [", round(as.numeric(top_effect_summary$lCI_max), d), "; ", round(as.numeric(top_effect_summary$uCI_max), d), "]")
@@ -1528,12 +1533,13 @@ top_effect_summary$sigma_b <- paste0(round(as.numeric(top_effect_summary$sigma_b
 ```{r top_effect_summary_table,echo=FALSE, cache=FALSE}
 # Table shows 20 effects that have highest variation between patients by comparing minimum and maximum of expected effect strength.
 
-kable(top_effect_summary[1:20, c(16,2,3,10,13)], "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect", "Study min.", "tudy max.","Sigma_g","Sigma_b")) %>%
+kable(top_effect_summary[1:20, c(19,22,2,3,10)], "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect", "General effect" ,"Study min.", "Study max.","Sigma_g")) %>%
     kable_styling(latex_options = "HOLD_position") %>%
     kable_styling(latex_options = c("basic", "condensed"), full_width = TRUE) %>%
-    add_header_above(c(" " = 1, "Expected personal effect strength" = 2, "Inter-treatment/patient variation"), escape = F) %>%
+    add_header_above(c(" " = 2, "Expected personal effect strength" = 2, "Inter-treatment variation"), escape = F) %>%
     row_spec(0,bold=TRUE) %>%
     save_kable(file = "tables/top_effect_summary_table.pdf", keep_tex = TRUE)
+
 ```
 
 ```{r recommendation_overview_simulation, eval=FALSE,echo=FALSE, message=FALSE}
@@ -2035,7 +2041,7 @@ intake_reasoning.df <- accepted_intake.df %>%
 intake_reasoning.df$pot_text <- paste0(round(as.numeric(intake_reasoning.df$min_pot),0)," - ", round(as.numeric(intake_reasoning.df$max_pot),0))
 intake_reasoning.df$pho_text <- paste0(round(as.numeric(intake_reasoning.df$min_pho),0)," - ", round(as.numeric(intake_reasoning.df$max_pho),0))
 
-intake_reasoning.df[intake_reasoning.df$min_pho == "-1",]$pot_text <- ""
+intake_reasoning.df[intake_reasoning.df$min_pot == "-1",]$pot_text <- ""
 intake_reasoning.df[intake_reasoning.df$min_pho == "-1",]$pho_text <- ""
                     
 # concentration reasoning
@@ -2099,22 +2105,24 @@ pot_plot <- ggplot(intake_reasoning.df, aes(x = pot, y = reorder(person_text, ma
       geom_boxplot(width = 0.07, outlier.shape = NULL, aes(fill = extra_pot, color = extra_pot), show.legend = FALSE) +
       theme_bw() +
       scale_x_continuous(breaks=c(0,2500,5800), limits = c(0,5850)) +
-      geom_text(stat = "unique", aes(x=2500, label=pot_text), nudge_y=0.32, size=2.1) +
-      geom_vline(xintercept = 2500, linetype="solid", color = "black", size=0.2) +
+      geom_text(stat = "unique", aes(x=2500, label=pot_text), nudge_y=0.32, size=1.6) +
+      geom_vline(xintercept = 2500, linetype="solid", color = "black", size=0.1) +
       labs(x = element_blank(), y = "Patients") +
-      theme(axis.text.x = element_text(size=6),axis.title = element_text(size=9), axis.text = element_text(size=7), plot.title = element_text(size=8)) +
+      #theme(text = element_text(family = "Times New Roman")) +
+      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
       ggtitle("Pot. (mg/d)")
 
 pho_plot <- ggplot(intake_reasoning.df, aes(x = pho, y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000), group = person_id)) +
       geom_boxplot(width = 0.07, outlier.shape = NULL, aes(fill = extra_pho, color = extra_pho), show.legend = FALSE) +
       theme_bw() +
       scale_x_continuous(breaks=c(0,1000,2550), limits = c(0,3000)) +
-      geom_text(stat = "unique", aes(x=1000, label=pho_text), nudge_y=0.3, size=2.1) +
-      geom_vline(xintercept = 1000, linetype="solid", color = "black", size=0.2) +
+      geom_text(stat = "unique", aes(x=1000, label=pho_text), nudge_y=0.3, size=1.6) +
+      geom_vline(xintercept = 1000, linetype="solid", color = "black", size=0.1) +
       labs(x = element_blank(), y = element_blank()) +
-      theme(axis.text.x = element_text(size=6),axis.title = element_text(size=9), axis.text.y = element_blank(), plot.title = element_text(size=8)) +
-      ggtitle("Phosp. (mg/d)   →")
-              
+      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      #theme(text = element_text(family = "Times New Roman")) +
+      ggtitle("Phosp. (mg/d)")
+
 pk_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
       geom_bar(stat='identity', aes(x=pk_mu_q0), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
       geom_bar(stat='identity', aes(x=pk_high_rec, fill=pk_accepted), width=0.3, show.legend = FALSE) +
@@ -2128,7 +2136,8 @@ pk_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom
       #geom_point(aes(x=pk_lower_limit), shape=3) +
       #geom_point(aes(x=pk_upper_limit), shape=3) +
       labs(x = element_blank(), y = element_blank()) +
-      theme(axis.text.y = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=9), plot.title = element_text(size=8)) +
+      #theme(text = element_text(family = "Times New Roman")) +
+      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
       ggtitle("P-K (mmol/l)")
 
 fppi_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
@@ -2143,8 +2152,9 @@ fppi_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_rec
       #geom_point(aes(x=fppi_upper_limit), shape=3) +
       theme_bw() +
       scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
-      theme(axis.text.y = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=9), plot.title = element_text(size=8)) +
+      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
       labs(x = element_blank(), y = element_blank()) +
+      #theme(text = element_text(family = "Times New Roman")) +
       ggtitle("fP-Pi (mmol/l)")
 
 palb_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
@@ -2160,20 +2170,72 @@ palb_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_rec
       #geom_point(aes(x=palb_upper_limit), shape=3) +
       theme_bw() +
       scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
-      theme(axis.text.y = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=9), plot.title = element_text(size=8)) +
+      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
       labs(x = element_blank(), y = element_blank()) +
+      #theme(text = element_text(family = "Times New Roman")) +
       ggtitle("P-Alb (g/l)")
 
-grid.arrange(grobs=list(pot_plot,pho_plot,pk_plot,fppi_plot,palb_plot),top=textGrob("Personal intake recommendations                        Corresponding concentration predictions", gp = gpar(fontsize = 9)),ncol=5,nrow=1,padding=unit(0,"cm"),widths=c(1.45,1,1,1,1))
+#grid.arrange(grobs=list(pot_plot,pho_plot,pk_plot,fppi_plot,palb_plot),top=textGrob("Personal intake recommendations                        Corresponding concentration predictions", gp = gpar(fontsize = 9)),ncol=5,nrow=1,padding=unit(0,"cm"),widths=c(1.45,1,1,1,1))
 
 #recommendation_plot <- grid.arrange(grobs=list(pot_plot,pho_plot,pk_plot,fppi_plot,palb_plot),ncol=5,nrow=1,padding=unit(0,"cm"),widths=c(1.32,1,1,1,1))
 
-ggsave(paste0("figures/recommendation_plot_X50_B50.pdf"), plot = recommendation_plot, width = 6, height = 6, scale = 1)
+recommendation_grob <- arrangeGrob(grobs=list(pot_plot,pho_plot,pk_plot,fppi_plot,palb_plot), ncol=5, nrow=1, padding=unit(0,"cm"), widths=c(1.32,1,1,1,1))
 
-#library(Cairo)
-#Cairo(file = "figures/Fig3.tiff", type = "tiff", width = 6, height = 6, bg="white", units = "in", res = 600)
-#grid.arrange(grobs=list(pot_plot,pho_plot,pk_plot,fppi_plot,palb_plot),top=textGrob("Personal intake recommendations                        Corresponding #concentration predictions", gp = gpar(fontsize = 9)),ncol=5,nrow=1,padding=unit(0,"cm"),widths=c(1.45,1,1,1,1))
-#dev.off()
+
+save_pdf_plot <- function(filename, width, height) {
+
+    # Open the device
+  pdf(file = filename, width = width, height = height)
+  
+  # Start a fresh grid graphics page
+  grid.newpage()
+  
+  # Draw the grob
+  grid.draw(recommendation_grob)
+  
+  # Define a viewport above the pho_plot
+  vp <- viewport(x = 0.371, y = 0.926, width = 0.2, height = 0.1, just = c("center", "bottom"))
+  
+  # Push to the viewport and draw the arrow
+  pushViewport(vp)
+  grid.segments(x0 = 0.79, x1 = 0.95, y0 = 0.5, y1 = 0.5, arrow = arrow(type = "closed", length = unit(0.06, "inches")), gp = gpar(fill = "black", col = "black"))
+  
+  # Close the PNG device
+  dev.off()
+}
+
+save_tiff_plot <- function(filename, width, height) {
+
+    # Open the device
+  tiff(file = filename, width = width, height = height, units = "in", bg="white", res=300)
+  
+  # Start a fresh grid graphics page
+  grid.newpage()
+  
+  # Draw the grob
+  grid.draw(recommendation_grob)
+  
+  # Define a viewport above the pho_plot
+  vp <- viewport(x = 0.371, y = 0.926, width = 0.2, height = 0.1, just = c("center", "bottom"))
+  
+  # Push to the viewport and draw the arrow
+  pushViewport(vp)
+  grid.segments(x0 = 0.79, x1 = 0.95, y0 = 0.5, y1 = 0.5, arrow = arrow(type = "closed", length = unit(0.06, "inches")), gp = gpar(fill = "black", col = "black"))
+  
+  # Close the PNG device
+  dev.off()
+}
+
+#save_tiff_plot(filename = "figures/Fig4.tiff", width = 5, height = 5)
+
+save_pdf_plot(filename = "figures/Fig4.pdf", width = 6, height = 6)
+
+# ggsave(paste0("figures/Fig4.pdf"), plot = recommendation_plot, width = 6, height = 6, scale = 1)
+# 
+# library(Cairo)
+# Cairo(file = "figures/Fig4.tiff", type = "tiff", width = 6, height = 6, bg="white", units = "in", res = 600)
+# grid.arrange(grobs=list(pot_plot,pho_plot,pk_plot,fppi_plot,palb_plot),top=textGrob("Personal intake recommendations                        Corresponding concentration redictions", gp = gpar(fontsize = 9)),ncol=5,nrow=1,padding=unit(0,"cm"),widths=c(1.45,1,1,1,1))
+# dev.off()
 
 # This vector is used to arrange the predicted recommendation is the same order for easy comparison
 
@@ -2290,6 +2352,8 @@ for (person_id in 36:36) {
       # Plotting
       intake_plot <- ggplot(subset(accepted_intake.df, lowest_conc_prob >= 0.50), aes(x = pot, y = pho)) +
         geom_point(aes(colour=lowest_conc_prob), show.legend = TRUE) +
+        theme(legend.position="bottom", axis.text = element_text(size=6), axis.title = element_text(size=7), plot.title = element_text(size=7)) + 
+        theme(text = element_text(family = "Times New Roman")) +
         geom_rect(fill = "#FFFFFF00", color = "white", size = 0.6,
                     aes(xmin = as.numeric(personal_recommendation.df$min_pot),
                     ymin = as.numeric(personal_recommendation.df$min_pho),
@@ -2327,12 +2391,11 @@ for (person_id in 36:36) {
                                labels = as.character(seq(50, 100, by = 5))) +
         scale_x_continuous(limits=c(0,5800), breaks=c(0,1000,2000,3000,4000,5000,5800)) +
         scale_y_continuous(limits=c(0,2550), breaks=c(0,500,1000,1500,2000,2550)) + 
-        theme(legend.position="bottom", axis.text = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=8)) + 
-        guides(colour = guide_colorbar(title = "Probability % of reaching target concentrations", title.theme = element_text(size=8), label.theme = element_text(size=6), title.position = "top", barwidth = unit(80,"mm"))) +
+        guides(colour = guide_colorbar(title = "Probability % of reaching target concentrations", title.theme = element_text(size=6, family = "Times New Roman"), label.theme = element_text(size=5, family = "Times New Roman"), title.position = "top", barwidth = unit(80,"mm"))) +
         ggtitle("Personal intake limits inferred from matching concentration boundary\npredictions on the right, as highlighted by corresponding colors") +
         geom_segment(aes(xend = avg_k+60, x = 3550, yend = avg_f-30, y = 120), color="#333333", size=0.15) +
-        geom_segment(aes(xend = 5400, x = 4000, yend = 250, y = 250), color="#333333", size=0.15, arrow = arrow(type = "closed", length = unit(0.06, "inches"))) +
-        annotate("label", x = 3500, y = 115, label = "Observed intake that produced\nthe concentrations with dashed lines", size=2.5, vjust = "bottom")    
+        geom_segment(aes(xend = 5700, x = 5000, yend = 125, y = 125), color="#333333", size=0.15, arrow = arrow(type = "closed", length = unit(0.06, "inches"))) +
+        annotate("label", x = 3500, y = 115, label = "Point of observed intake that produced\nthe concentrations with dashed lines", size=2, vjust = "middle")    
       
         # geom_label_repel(aes(label = proposal, colour = proposal),
         #                  data = subset(accepted_intake.df, limiting_proposal < 1000000),
@@ -2351,7 +2414,8 @@ for (person_id in 36:36) {
         annotate("rect", xmin=-Inf, xmax=pk_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
         annotate("rect", xmin=pk_recommendations[2], xmax=Inf, ymax=Inf, ymin=-Inf, alpha = .2) + 
         theme_bw() +
-        theme(axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9), axis.text.y = element_blank()) 
+        theme(text = element_text(family = "Times New Roman")) +
+        theme(axis.text.x = element_text(size=6), axis.title = element_text(size=7), plot.title = element_text(size=9), axis.text.y = element_blank()) 
       
       fppi_plot <- ggplot(concs_minmax.df, aes(x = fppi, group=factor(color_order))) +
         geom_density(aes(color=factor(color_order)), show.legend = FALSE) +
@@ -2363,7 +2427,8 @@ for (person_id in 36:36) {
         annotate("rect", xmin=-Inf, xmax=fppi_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
         annotate("rect", xmin=fppi_recommendations[2], xmax=Inf, ymax=Inf, ymin=-Inf, alpha = .2) + 
         theme_bw() +
-        theme(axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9), axis.text.y = element_blank())
+        theme(text = element_text(family = "Times New Roman")) +
+        theme(axis.text.x = element_text(size=6), axis.title = element_text(size=7), plot.title = element_text(size=9), axis.text.y = element_blank())
       
       palb_plot <- ggplot(concs_minmax.df, aes(x = palb, color=factor(color_order), group=factor(color_order))) +
         geom_density(aes(color=factor(color_order)), show.legend = FALSE) +
@@ -2376,7 +2441,8 @@ for (person_id in 36:36) {
         annotate("rect", xmin=-Inf, xmax=palb_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
         annotate("rect", xmin=palb_recommendations[2], xmax=Inf, ymax=Inf, ymin=-Inf, alpha = .2) + 
         theme_bw() +
-        theme(legend.position="bottom", legend.title = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9), axis.text.y = element_blank())
+        theme(text = element_text(family = "Times New Roman")) +
+        theme(legend.position="bottom", legend.title = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=7), plot.title = element_text(size=9), axis.text.y = element_blank())
       
       lay <- rbind(c(1,1,2),
                    c(1,1,3),
@@ -2385,15 +2451,15 @@ for (person_id in 36:36) {
       #reasoning_plot <- grid.arrange(grobs=list(intake_plot,pk_plot,fppi_plot,palb_plot),layout_matrix = lay,padding=unit(0,"cm"),top=textGrob("Personally recommended intake range and the corresponding concentration predictions", gp = gpar(fontsize = 10)))
       reasoning_plot <- grid.arrange(grobs=list(intake_plot,pk_plot,fppi_plot,palb_plot),layout_matrix = lay,padding=unit(0,"cm"))
 
-      ggsave(paste0("figures/reasoning_plots/reasoning_plots_",person_id,".pdf"), plot = reasoning_plot, width = 6, height = 6, scale = 1)
+      #ggsave(paste0("figures/reasoning_plots/reasoning_plots_",person_id,".pdf"), plot = reasoning_plot, width = 6, height = 6, scale = 1)
     }
     
   } # file exists
 }
-
+      
 # Saving to TIFF only works from console
 library(Cairo)
-Cairo(file = "figures/Fig2.tiff", type = "tiff", width = 6, height = 6, bg="white", units = "in", res = 600)
+Cairo(file = "figures/Fig3.tiff", type = "tiff", width = 5, height = 5, bg="white", units = "in", res = 500)
 grid.arrange(intake_plot, pk_plot, fppi_plot, palb_plot, layout_matrix = lay, padding=0)
 dev.off()
 
