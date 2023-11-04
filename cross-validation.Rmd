@@ -37,7 +37,7 @@ library(tidyr)
 datadesc_fat_epros <- read.csv(file="data/DIALYSIS_data_description_fat_epros.csv", header = TRUE, sep = ";")
 
 # Read the actual data matching the description
-dialysis <- read.csv(file="data/DIALYSIS.csv", sep=";", dec=",")
+dialysis <- read.csv(file="data/DIALYSIS_DATES_OMITTED.csv", sep=";", dec=",")
 
 # Define factors
 dialysis$potilas <- factor(dialysis$potilas)
@@ -743,13 +743,14 @@ nrmse_plot <- ggplot(error_analysis.df) +
   geom_segment(aes(y = reorder(subject, patient_id), yend = subject, x = avg_error, xend = avg_cv_error, group = subject, color = fold_color), linetype = "solid", show.legend = FALSE) +
   theme_bw() +
   scale_fill_viridis(discrete = TRUE) + 
+  theme(text = element_text(family = "Times New Roman")) +
   labs(x = "NRMSE", y = "Patient") 
 
 nrmse_plot
-ggsave("figures/nrmse_plot.pdf", plot = nrmse_plot)
+#ggsave("figures/nrmse_plot.pdf", plot = nrmse_plot)
 
-#library(Cairo)
-Cairo(file = "figures/FigS7.tiff", type = "tiff", width = 4, height = 4, bg="white", units = "in", res = 300)
+library(Cairo)
+Cairo(file = "figures/FigS5.tiff", type = "tiff", width = 4, height = 4, bg="white", units = "in", res = 300)
 print(nrmse_plot)
 dev.off()
 
