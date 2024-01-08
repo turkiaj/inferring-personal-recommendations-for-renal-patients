@@ -154,7 +154,6 @@ assumedtargets <- datadesc_fat_epros[datadesc_fat_epros$Order==200,]
 #dialysis2 <- read.csv(file="data/DIALYSIS_DATES_OMITTED.csv", sep=";", dec=",")
 #dialysis2
 
-
 ```
 
 ```{r two_sets_of_predictors, echo=FALSE, message=FALSE}
@@ -634,7 +633,7 @@ source("mebn/v2/MEBNv2.r")
 # Extract generative models for patients with data from personal grouping
 
 # - latent parameters from this model
-latent_parameter_modeldir <- "models/BLMM_gamma_mv_cross/two_levels"
+latent_parameter_modeldir <- "models/BLMM_gamma_mv_cross/two_levels/noncentered/"
 #latent_parameter_modeldir <- "models/BLMM_gamma_qr_multivariate3/imputed_palb/"
 #latent_parameter_modeldir <- "models/BLMM_gamma_separate/"
 
@@ -654,14 +653,15 @@ graph_dir <- "graphs/mv3_cross_two_levels/"
 dialysis <- readRDS("data/DIALYSIS_imputed_palb.rds")
 
 # add the dialysis treatment type as a grouping factor
+dialysis$potilas <- factor(dialysis$potilas)
 dialysis$hoitoryhma <- as.factor(dialysis$hoitomuoto)
 
 patients <- levels(dialysis$potilas)
 
 #for (person_id in 1:length(patients)) {
 
-for (person_id in 1:37) {
-  
+for (person_id in 2:37) {
+
   # - initial graph structure
   initial_graph <- mebn.fully_connected_bipartite_graph(datadesc)
   
@@ -677,7 +677,7 @@ for (person_id in 1:37) {
   normalized_input_df <- as.data.frame(normalized_input)
   
   # - pick rows for the selected person
-  subject_code <- levels(dialysis$potilas)[person_id]
+  subject_code <- patients[person_id]
   personal_data_df <- cbind(dialysis$potilas, normalized_input_df)
   personal_data_df <- personal_data_df[personal_data_df$`dialysis$potilas` == subject_code,]
   personal_data <- as.matrix(subset(personal_data_df, select = -c(`dialysis$potilas`)))
@@ -704,7 +704,6 @@ for (person_id in 1:37) {
 }
 
 ```
-
 
 ```{r simulated_MSE, eval=FALSE, echo=FALSE}
 library(igraph)
@@ -856,7 +855,7 @@ pk_fppi_palb_targets[pk_fppi_palb_targets$Name == "palb",]$ScaleMax <- 50
 
 p <- mebn.multivariate_dens_overlays("models/BLMM_gamma_mv_cross/two_levels/noncentered", pk_fppi_palb_targets, dialysis_imputed) 
 
-ggsave("figures/Fig5.pdf", plot = p, device = "pdf", width = 4, height = 4)
+#ggsave("figures/Fig5.pdf", plot = p, device = "pdf", width = 4, height = 4)
 
 # Save TIFF. This only works from console.
 library(Cairo)
@@ -882,7 +881,7 @@ library(rstan)
 library(ggcorrplot)
 
 #target_blmm <- mebn.get_localfit("pk_fppi_palb", "models/BLMM_gamma_mv_cross")
-target_blmm <- mebn.get_localfit("pk_fppi_palb", "models/BLMM_gamma_mv_cross/two_levels")
+target_blmm <- mebn.get_localfit("pk_fppi_palb", "models/BLMM_gamma_mv_cross/two_levels/noncentared")
 
 C_extract <- rstan::extract(target_blmm, pars = c("C_s"))
 
@@ -922,7 +921,7 @@ library(rstan)
 library(ggcorrplot)
 
 #target_blmm <- mebn.get_localfit("pk_fppi_palb", "models/BLMM_gamma_mv_cross")
-target_blmm <- mebn.get_localfit("pk_fppi_palb", "models/BLMM_gamma_mv_cross/two_levels")
+target_blmm <- mebn.get_localfit("pk_fppi_palb", "models/BLMM_gamma_mv_cross/two_levels/noncentared")
 
 C_extract <- rstan::extract(target_blmm, pars = c("C_g"))
 
@@ -1045,8 +1044,8 @@ effect_cor.df$corr <- as.numeric(effect_cor.df$corr)
 effect_cor.df$abs_effect <- as.numeric(effect_cor.df$abs_effect)
 
 # fix effect names for table
-effect_cor.df$effect1 <- unlist(lapply(strsplit(effect_cor.df$effect1, ":"), function(x) ifelse(is.na(x[2]), x[1], paste0(x[2]," -> ",x[1]))))
-effect_cor.df$effect2 <- unlist(lapply(strsplit(effect_cor.df$effect2, ":"), function(x) ifelse(is.na(x[2]), x[1], paste0(x[2]," -> ",x[1]))))
+effect_cor.df$effect1 <- unlist(lapply(strsplit(effect_cor.df$effect1, ":"), function(x) ifelse(is.na(x[2]), x[1], paste0(x[2]," $\rightarrow$ ",x[1]))))
+effect_cor.df$effect2 <- unlist(lapply(strsplit(effect_cor.df$effect2, ":"), function(x) ifelse(is.na(x[2]), x[1], paste0(x[2]," $\rightarrow$ ",x[1]))))
 
 top_correlations <- effect_cor.df %>% 
   top_n(60, abs_effect) %>%
@@ -1077,11 +1076,10 @@ top_pho_correlations <- effect_cor.df %>%
 kable(rbind(top_pot_correlations, top_pho_correlations), "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect 1", "Effect 2", "Correlation"), caption = "Table shows 40 highest positive or negative correlations between potassium and phosphorous treatment effects with other treatment effects. This structure of correlations is used in
 estimating the personal effects based on personal intake and matching concentrations.") %>%
     kable_styling(latex_options = "HOLD_position") %>%
-    kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) %>%
+    kable_styling(latex_options = c("basic", "condensed"), full_width = TRUE) %>%
     add_header_above(c("Treatment-level effects of nutrients" = 2, " " = 1), escape = F) %>%
-    row_spec(0,bold=TRUE)
-  
-  #    save_kable(file = "tables/treatment_pot_and_pho_effect_correlations.pdf", keep_tex = TRUE)
+    row_spec(0,bold=TRUE) %>%
+    save_kable(file = "tables/treatment_pot_and_pho_effect_correlations.pdf", keep_tex = TRUE)
 
 ```
 
@@ -1143,9 +1141,8 @@ kable(rbind(top_pot_correlations, top_pho_correlations), "latex", escape = T, bo
     kable_styling(latex_options = "HOLD_position") %>%
     kable_styling(latex_options = c("basic", "condensed"), full_width = FALSE) %>%
     add_header_above(c("Personal effects of nutrients" = 2, " " = 1), escape = F) %>%
-    row_spec(0,bold=TRUE)
-
-#    save_kable(file = "tables/subject_pot_and_pho_effect_correlations.pdf", keep_tex = TRUE)
+    row_spec(0,bold=TRUE) %>%
+    save_kable(file = "tables/subject_pot_and_pho_effect_correlations.pdf", keep_tex = TRUE)
 
 ```
 
@@ -1525,15 +1522,53 @@ top_effect_summary <- top_effect_summary %>% inner_join(effect_desc.df, by = "ef
 #top_effect_summary <- top_effect_summary %>% inner_join(effect_summary, by = "effect")
 d <- 2
 
-top_effect_summary$general <- paste0(round(as.numeric(top_effect_summary$general_effect),d), " [", round(as.numeric(top_effect_summary$general_effect_lCI), d), "; ", round(as.numeric(top_effect_summary$general_effect_uCI), d), "]")
+#top_effect_summary$general <- paste0(round(as.numeric(top_effect_summary$general_effect),d), " [", round(as.numeric(top_effect_summary$general_effect_lCI), d), "; ", round(as.numeric(top_effect_summary$general_effect_uCI), d), "]")
 
-top_effect_summary$personal_min <- paste0(round(as.numeric(top_effect_summary$personal_min),d), " [", round(as.numeric(top_effect_summary$lCI_min), d), "; ", round(as.numeric(top_effect_summary$uCI_min), d), "]")
+top_effect_summary$general <- round(as.numeric(top_effect_summary$general_effect),d)
 
-top_effect_summary$personal_max <- paste0(round(as.numeric(top_effect_summary$personal_max),d), " [", round(as.numeric(top_effect_summary$lCI_max), d), "; ", round(as.numeric(top_effect_summary$uCI_max), d), "]")
+top_effect_summary$general_CI <- paste0("[", round(as.numeric(top_effect_summary$general_effect_lCI), d), "; ", round(as.numeric(top_effect_summary$general_effect_uCI), d), "]")
 
-top_effect_summary$sigma_g <- paste0(round(as.numeric(top_effect_summary$sigma_g),d), " [", round(as.numeric(top_effect_summary$sigma_g_lCI), d), "; ", round(as.numeric(top_effect_summary$sigma_g_uCI), d), "]")
+#top_effect_summary$personal_min <- paste0(round(as.numeric(top_effect_summary$personal_min),d), " [", round(as.numeric(top_effect_summary$lCI_min), d), "; ", round(as.numeric(top_effect_summary$uCI_min), d), "]")
 
-top_effect_summary$sigma_b <- paste0(round(as.numeric(top_effect_summary$sigma_b),d), " [", round(as.numeric(top_effect_summary$sigma_b_lCI), d), "; ", round(as.numeric(top_effect_summary$sigma_b_uCI), d), "]")
+top_effect_summary$personal_min <- paste0(round(as.numeric(top_effect_summary$personal_min),d))
+
+top_effect_summary$personal_min_CI <- paste0("[", round(as.numeric(top_effect_summary$lCI_min), d), "; ", round(as.numeric(top_effect_summary$uCI_min), d), "]")
+
+#top_effect_summary$personal_max <- paste0(round(as.numeric(top_effect_summary$personal_max),d), " [", round(as.numeric(top_effect_summary$lCI_max), d), "; ", round(as.numeric(top_effect_summary$uCI_max), d), "]")
+
+top_effect_summary$personal_max <- paste0(round(as.numeric(top_effect_summary$personal_max),d))
+
+top_effect_summary$personal_max_CI <- paste0("[", round(as.numeric(top_effect_summary$lCI_max), d), "; ", round(as.numeric(top_effect_summary$uCI_max), d), "]")
+
+#top_effect_summary$sigma_g <- paste0(round(as.numeric(top_effect_summary$sigma_g),d), " [", round(as.numeric(top_effect_summary$sigma_g_lCI), d), "; ", round(as.numeric(top_effect_summary$sigma_g_uCI), d), "]")
+
+top_effect_summary$sigma_g <- paste0(round(as.numeric(top_effect_summary$sigma_g),d))
+
+top_effect_summary$sigma_g_CI <- paste0("[", round(as.numeric(top_effect_summary$sigma_g_lCI), d), "; ", round(as.numeric(top_effect_summary$sigma_g_uCI), d), "]")
+
+#top_effect_summary$sigma_b <- paste0(round(as.numeric(top_effect_summary$sigma_b),d), " [", round(as.numeric(top_effect_summary$sigma_b_lCI), d), "; ", round(as.numeric(top_effect_summary$sigma_b_uCI), d), "]")
+
+top_effect_summary$sigma_b <- paste0(round(as.numeric(top_effect_summary$sigma_b),d))
+
+top_effect_summary$sigma_b_CI <- paste0("[", round(as.numeric(top_effect_summary$sigma_b_lCI), d), "; ", round(as.numeric(top_effect_summary$sigma_b_uCI), d), "]")
+
+```
+
+```{r}
+top_effect_summary
+top_effect_summary[1:20,c(19,22,23,2,24,3,25,10,26)]
+
+```
+
+```{r top_effect_summary_table,echo=FALSE, cache=FALSE}
+# Table shows 20 effects that have highest variation between patients by comparing minimum and maximum of expected effect strength.
+
+kable(top_effect_summary[1:20, c(19,22,23,2,24,3,25,10,26)], "latex", escape = T, booktabs = T, row.names = FALSE, digits = 3, col.names = c("Effect", "General effect","CI","Study min.","CI","Study max.", "CI", "Sigma_g", "CI")) %>%
+    kable_styling(latex_options = "HOLD_position") %>%
+    kable_styling(latex_options = c("basic", "condensed"), full_width = TRUE) %>%
+    add_header_above(c(" " = 1, "Expected effect strength" = 6, "Inter-treatment variation" = 2), escape = F) %>%
+    row_spec(0,bold=TRUE) %>%
+    save_kable(file = "tables/top_effect_summary_table2.pdf", keep_tex = TRUE)
 
 ```
 
@@ -2030,9 +2065,9 @@ patient_summary$person_id <- as.character(patient_summary$person_id)
 accepted_intake.df$person_id <- as.character(accepted_intake.df$person_id)
 
 # english abbreviations for dialysis treatments
-#patient_summary[patient_summary$treatment == "OHD",]$treatment <- "HD"
-#patient_summary[patient_summary$treatment == "KHD",]$treatment <- "HHD"
-#patient_summary[patient_summary$treatment == "PD",]$treatment <- "PD"
+patient_summary[patient_summary$treatment == "OHD",]$treatment <- "HD"
+patient_summary[patient_summary$treatment == "KHD",]$treatment <- "HHD"
+patient_summary[patient_summary$treatment == "PD",]$treatment <- "PD"
 
 intake_reasoning.df <- accepted_intake.df %>%
     inner_join(patient_summary, by="person_id") %>%
@@ -2112,22 +2147,26 @@ pot_plot <- ggplot(intake_reasoning.df, aes(x = pot, y = reorder(person_text, ma
       geom_boxplot(width = 0.07, outlier.shape = NULL, aes(fill = extra_pot, color = extra_pot), show.legend = FALSE) +
       theme_bw() +
       scale_x_continuous(breaks=c(0,2500,5800), limits = c(0,5850)) +
-      geom_text(stat = "unique", aes(x=2500, label=pot_text), nudge_y=0.32, size=1.6) +
+      geom_text(stat = "unique", aes(x=2500, label=pot_text), nudge_y=0.32, size=2.0) +
       geom_vline(xintercept = 2500, linetype="solid", color = "black", size=0.1) +
       labs(x = element_blank(), y = "Patients") +
-      #theme(text = element_text(family = "Times New Roman")) +
+      theme(text = element_text(family = "Times New Roman")) +
       theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
       ggtitle("Pot. (mg/d)")
+
+      # PDF: theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
+      # TIF: theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
 
 pho_plot <- ggplot(intake_reasoning.df, aes(x = pho, y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000), group = person_id)) +
       geom_boxplot(width = 0.07, outlier.shape = NULL, aes(fill = extra_pho, color = extra_pho), show.legend = FALSE) +
       theme_bw() +
       scale_x_continuous(breaks=c(0,1000,2550), limits = c(0,3000)) +
-      geom_text(stat = "unique", aes(x=1000, label=pho_text), nudge_y=0.3, size=1.6) +
+      geom_text(stat = "unique", aes(x=1000, label=pho_text), nudge_y=0.3, size=2.0) +
       geom_vline(xintercept = 1000, linetype="solid", color = "black", size=0.1) +
       labs(x = element_blank(), y = element_blank()) +
+      # PDF: theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text.y = element_blank(), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
       theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
-      #theme(text = element_text(family = "Times New Roman")) +
+      theme(text = element_text(family = "Times New Roman")) +
       ggtitle("Phosp. (mg/d)")
 
 pk_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
@@ -2143,8 +2182,9 @@ pk_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom
       #geom_point(aes(x=pk_lower_limit), shape=3) +
       #geom_point(aes(x=pk_upper_limit), shape=3) +
       labs(x = element_blank(), y = element_blank()) +
-      #theme(text = element_text(family = "Times New Roman")) +
+      theme(text = element_text(family = "Times New Roman")) +
       theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      # PDF: theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text.y = element_blank(), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
       ggtitle("P-K (mmol/l)")
 
 fppi_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
@@ -2159,9 +2199,9 @@ fppi_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_rec
       #geom_point(aes(x=fppi_upper_limit), shape=3) +
       theme_bw() +
       scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
-      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text.y = element_blank(), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
       labs(x = element_blank(), y = element_blank()) +
-      #theme(text = element_text(family = "Times New Roman")) +
+      theme(text = element_text(family = "Times New Roman")) +
       ggtitle("fP-Pi (mmol/l)")
 
 palb_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
@@ -2177,9 +2217,9 @@ palb_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_rec
       #geom_point(aes(x=palb_upper_limit), shape=3) +
       theme_bw() +
       scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
-      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text.y = element_blank(), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
       labs(x = element_blank(), y = element_blank()) +
-      #theme(text = element_text(family = "Times New Roman")) +
+      theme(text = element_text(family = "Times New Roman")) +
       ggtitle("P-Alb (g/l)")
 
 #grid.arrange(grobs=list(pot_plot,pho_plot,pk_plot,fppi_plot,palb_plot),top=textGrob("Personal intake recommendations                        Corresponding concentration predictions", gp = gpar(fontsize = 9)),ncol=5,nrow=1,padding=unit(0,"cm"),widths=c(1.45,1,1,1,1))
@@ -2205,7 +2245,7 @@ save_pdf_plot <- function(filename, width, height) {
   
   # Push to the viewport and draw the arrow
   pushViewport(vp)
-  grid.segments(x0 = 0.79, x1 = 0.95, y0 = 0.5, y1 = 0.5, arrow = arrow(type = "closed", length = unit(0.06, "inches")), gp = gpar(fill = "black", col = "black"))
+  grid.segments(x0 = 0.79, x1 = 0.93, y0 = 0.5, y1 = 0.5, arrow = arrow(type = "closed", length = unit(0.06, "inches")), gp = gpar(fill = "black", col = "black"))
   
   # Close the PNG device
   dev.off()
@@ -2263,6 +2303,8 @@ library(ggrepel)
 # Plot the personal recommendations
 for (person_id in 36:36) {
   
+  person_id <- 36
+  
   subject_code <- levels(dialysis$potilas)[person_id]
 
   personal_info <- head(dialysis[dialysis$potilas == subject_code,],1)
@@ -2272,7 +2314,6 @@ for (person_id in 36:36) {
   fppi_recommendations <- c(recommeded_concentrations$lower_limits[2], recommeded_concentrations$upper_limits[2])
   palb_recommendations <- c(recommeded_concentrations$lower_limits[3], recommeded_concentrations$upper_limits[3])
     
-#  person_id <- 28
   simulation <- "X50_B50_A50_I50"
   
   accepted_intake <- paste0("./patient_summary/mv3_cross_two_levels/simulation",simulation,"/details/accepted_intake_",person_id,".rds")
@@ -2331,7 +2372,7 @@ for (person_id in 36:36) {
           scale_x_continuous(limits=c(0,5000), breaks=c(0,1000,2000,3000,4000,5000)) +
           scale_y_continuous(limits=c(0,2500), breaks=c(0,500,1000,1500,2000,2500)) + 
           theme(legend.position="bottom", axis.text.x = element_text(size=6), axis.title = element_text(size=6), plot.title = element_text(size=10)) + 
-          guides(colour = guide_colorbar(title = "Probability of reaching target concs.", title.theme = element_text(size=7), title.position = "top", barwidth = unit(80,"mm"))) 
+          guides(colour = guide_colorbar(title = "Probability of reaching target concs.", title.theme = element_text(size=9), title.position = "top", barwidth = unit(80,"mm"))) 
           # geom_label_repel(aes(label = proposal, colour = proposal),
           #                  data = subset(accepted_intake.df, limiting_proposal < 1000000),
           #                  box.padding   = 0.35, 
@@ -2357,10 +2398,10 @@ for (person_id in 36:36) {
       concs_minmax.df <- concs_minmax.df %>% inner_join(proposal_order, by = "proposal")
       
       # Plotting
+        #theme(text = element_text(family = "Times-Roman")) +
       intake_plot <- ggplot(subset(accepted_intake.df, lowest_conc_prob >= 0.50), aes(x = pot, y = pho)) +
         geom_point(aes(colour=lowest_conc_prob), show.legend = TRUE) +
-        theme(legend.position="bottom", axis.text = element_text(size=6), axis.title = element_text(size=7), plot.title = element_text(size=7)) + 
-        theme(text = element_text(family = "Times New Roman")) +
+        theme(legend.position="bottom", axis.text = element_text(size=7), axis.title = element_text(size=8), plot.title = element_text(size=8)) + 
         geom_rect(fill = "#FFFFFF00", color = "white", size = 0.6,
                     aes(xmin = as.numeric(personal_recommendation.df$min_pot),
                     ymin = as.numeric(personal_recommendation.df$min_pho),
@@ -2398,11 +2439,11 @@ for (person_id in 36:36) {
                                labels = as.character(seq(50, 100, by = 5))) +
         scale_x_continuous(limits=c(0,5800), breaks=c(0,1000,2000,3000,4000,5000,5800)) +
         scale_y_continuous(limits=c(0,2550), breaks=c(0,500,1000,1500,2000,2550)) + 
-        guides(colour = guide_colorbar(title = "Probability % of reaching target concentrations", title.theme = element_text(size=6, family = "Times New Roman"), label.theme = element_text(size=5, family = "Times New Roman"), title.position = "top", barwidth = unit(80,"mm"))) +
+        guides(colour = guide_colorbar(title = "Probability % of reaching target concentrations", title.theme = element_text(size=7), label.theme = element_text(size=7), title.position = "top", barwidth = unit(80,"mm"))) +
         ggtitle("Personal intake limits inferred from matching concentration boundary\npredictions on the right, as highlighted by corresponding colors") +
         geom_segment(aes(xend = avg_k+60, x = 3550, yend = avg_f-30, y = 120), color="#333333", size=0.15) +
-        geom_segment(aes(xend = 5700, x = 5000, yend = 125, y = 125), color="#333333", size=0.15, arrow = arrow(type = "closed", length = unit(0.06, "inches"))) +
-        annotate("label", x = 3500, y = 115, label = "Point of observed intake that produced\nthe concentrations with dashed lines", size=2, vjust = "middle")    
+        geom_segment(aes(xend = 5700, x = 4500, yend = 125, y = 125), color="#333333", size=0.15, arrow = arrow(type = "closed", length = unit(0.06, "inches"))) +
+        annotate("label", x = 3500, y = 115, label = "Point of observed intake that produced\nthe concentrations with dashed lines", size=2.5, vjust = "middle")    
       
         # geom_label_repel(aes(label = proposal, colour = proposal),
         #                  data = subset(accepted_intake.df, limiting_proposal < 1000000),
@@ -2410,7 +2451,6 @@ for (person_id in 36:36) {
         #                  point.padding = 0.5,
         #                  segment.color = "grey")
       
-      # what kind of concentration these intakes result?
       pk_plot <- ggplot(concs_minmax.df, aes(x = pk, group=factor(color_order))) +
         geom_density(aes(colour=factor(color_order)), show.legend = FALSE) +
         labs(x = "P-K (mmol/l)", y = NULL, title=element_blank()) +
@@ -2421,8 +2461,8 @@ for (person_id in 36:36) {
         annotate("rect", xmin=-Inf, xmax=pk_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
         annotate("rect", xmin=pk_recommendations[2], xmax=Inf, ymax=Inf, ymin=-Inf, alpha = .2) + 
         theme_bw() +
-        theme(text = element_text(family = "Times New Roman")) +
-        theme(axis.text.x = element_text(size=6), axis.title = element_text(size=7), plot.title = element_text(size=9), axis.text.y = element_blank()) 
+        theme(axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9), axis.text.y = element_blank()) 
+        #theme(text = element_text(family = "Times-Roman")) +
       
       fppi_plot <- ggplot(concs_minmax.df, aes(x = fppi, group=factor(color_order))) +
         geom_density(aes(color=factor(color_order)), show.legend = FALSE) +
@@ -2434,8 +2474,8 @@ for (person_id in 36:36) {
         annotate("rect", xmin=-Inf, xmax=fppi_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
         annotate("rect", xmin=fppi_recommendations[2], xmax=Inf, ymax=Inf, ymin=-Inf, alpha = .2) + 
         theme_bw() +
-        theme(text = element_text(family = "Times New Roman")) +
-        theme(axis.text.x = element_text(size=6), axis.title = element_text(size=7), plot.title = element_text(size=9), axis.text.y = element_blank())
+        theme(axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9), axis.text.y = element_blank())
+        #theme(text = element_text(family = "Times-Roman")) +
       
       palb_plot <- ggplot(concs_minmax.df, aes(x = palb, color=factor(color_order), group=factor(color_order))) +
         geom_density(aes(color=factor(color_order)), show.legend = FALSE) +
@@ -2448,8 +2488,8 @@ for (person_id in 36:36) {
         annotate("rect", xmin=-Inf, xmax=palb_recommendations[1], ymax=Inf, ymin=-Inf, alpha = .2) + 
         annotate("rect", xmin=palb_recommendations[2], xmax=Inf, ymax=Inf, ymin=-Inf, alpha = .2) + 
         theme_bw() +
-        theme(text = element_text(family = "Times New Roman")) +
-        theme(legend.position="bottom", legend.title = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=7), plot.title = element_text(size=9), axis.text.y = element_blank())
+        theme(legend.position="bottom", legend.title = element_blank(), axis.text.x = element_text(size=6), axis.title = element_text(size=8), plot.title = element_text(size=9), axis.text.y = element_blank())
+        #theme(text = element_text(family = "Times-Roman")) +
       
       lay <- rbind(c(1,1,2),
                    c(1,1,3),
@@ -2458,17 +2498,17 @@ for (person_id in 36:36) {
       #reasoning_plot <- grid.arrange(grobs=list(intake_plot,pk_plot,fppi_plot,palb_plot),layout_matrix = lay,padding=unit(0,"cm"),top=textGrob("Personally recommended intake range and the corresponding concentration predictions", gp = gpar(fontsize = 10)))
       reasoning_plot <- grid.arrange(grobs=list(intake_plot,pk_plot,fppi_plot,palb_plot),layout_matrix = lay,padding=unit(0,"cm"))
 
-      #ggsave(paste0("figures/reasoning_plots/reasoning_plots_",person_id,".pdf"), plot = reasoning_plot, width = 6, height = 6, scale = 1)
+      ggsave(paste0("figures/reasoning_plots/reasoning_plots_",person_id,".pdf"), plot = reasoning_plot, width = 6, height = 6, scale = 1)
     }
     
   } # file exists
 }
       
 # Saving to TIFF only works from console
-library(Cairo)
-Cairo(file = "figures/Fig3.tiff", type = "tiff", width = 5, height = 5, bg="white", units = "in", res = 500)
-grid.arrange(intake_plot, pk_plot, fppi_plot, palb_plot, layout_matrix = lay, padding=0)
-dev.off()
+#library(Cairo)
+#Cairo(file = "figures/Fig3.tiff", type = "tiff", width = 5, height = 5, bg="white", units = "in", res = 500)
+#grid.arrange(intake_plot, pk_plot, fppi_plot, palb_plot, layout_matrix = lay, padding=0)
+#dev.off()
 
 ```
 
@@ -2487,12 +2527,18 @@ library(rstan)
 library(bayesplot)
 source("mebn/v2/MEBNv2.r")
 
-twolvl_fit <- mebn.get_localfit(target_name = "pk_fppi_palb", local_model_cache = "models/BLMM_gamma_mv_cross/two_levels/")
+twolvl_fit <- mebn.get_localfit(target_name = "pk_fppi_palb", local_model_cache = "models/BLMM_gamma_mv_cross/two_levels/noncentered/")
 
-p <- mebn.multivariate_dens_overlays("models/BLMM_gamma_mv_cross/two_levels/", assumedtargets, dialysis) 
+twolvl_fit
+
+p <- mebn.multivariate_dens_overlays("models/BLMM_gamma_mv_cross/two_levels/noncentered/", assumedtargets, dialysis) 
 p
 
-sumstats <- summary(twolvl_fit)
+sumstats <- summary(twolvl_fit, pars="beta", probs=c(0.05,0.95))
+
+sumstats$summary
+
+assumedpredictors_fat_epros$Name # [13] "kalsium" 
 
 eff <- na.omit(sumstats$summary[,9])
 c(min(eff),mean(eff),max(eff))  # 5.588204  580.998852 8609.589616
@@ -2501,6 +2547,56 @@ rhat <- na.omit(sumstats$summary[,10])
 c(min(rhat),mean(rhat),max(rhat)) # 0.9994999 1.0090897 1.7160137
 
 mcmc_trace(twolvl_fit, pars = c("beta[1,1]"))
+
+#                  mean    se_mean         sd        2.5%         25%          50%         75%      97.5%     n_eff     Rhat
+#beta[3,13]  0.33476956 1.15207749  7.9343515 -15.6253793 -4.90603184 -0.240055853  6.12735050 15.5277882 47.430695 1.110139
+
+# [1] "verenrasvojenlaakitys" "diabeteslaakitys"      "aktdvit"               "fosforinsitoja"        "renavit"               "hhepros"              
+# [7] "rasvaepros"            "mufaepros"             "pufaepros"             "protepros"             "safaepros"             "kuitu"                
+#[13] "protgkg"               "sukupuoli"             "ekcalkg"               "kalsium"               "fosfori"               "kalium"               
+#[19] "suola"                 "natrium"               "vesi"                  "dvit"     
+
+
+library(ggplot2)
+
+samples <- rstan::extract(twolvl_fit, pars = c("beta"))
+kalium_palb <- samples$beta[,3,18]
+
+mean_kalium_palb <- mean(kalium_palb)
+lCI <- quantile(kalium_palb, probs=0.05)   
+uCI <- quantile(kalium_palb, probs=0.95)   
+
+ggplot(as.data.frame(kalium_palb), aes(x=kalium_palb)) +
+  geom_density(fill="lightblue") + 
+  geom_vline(xintercept = mean_kalium_palb, color = "green") + 
+  geom_vline(xintercept = lCI) +
+  geom_vline(xintercept = uCI) 
+
+
+palb <- mebn.localsummary_from_two_level_multivariate(twolvl_fit, 3)
+
+cbind(palb$fixef_lCI, palb$fixef, palb$fixef_uCI)
+
+ms <- summary(twolvl_fit, pars=c(paste0("beta_Intercept"), paste0("beta"), paste0("sigma_b_g"), paste0("sigma_b_s")), probs=c(0.05, 0.95), na.rm = TRUE)
+beta <- summary(twolvl_fit, pars=c(paste0("beta")), probs=c(0.05, 0.95), na.rm = TRUE)
+beta
+
+fit <- mebn.get_localfit(target_name = "pk_fppi_palb", local_model_cache = "models/BLMM_gamma_mv_cross/two_levels/noncentered/")
+group_id <- 
+
+  #  mean      se_mean         sd          10%         90%     n_eff      Rhat
+  ms <- rstan::summary(fit, pars=c(paste0("g"), paste0("group_effect")), probs=c(0.05, 0.95), na.rm = TRUE)
+
+  # for mode
+  g_params <- grep(paste0("g\\[",group_id,",", targetindex, ","), rownames(ms$summary), value = TRUE)
+  g_draws <- rstan::extract(fit, pars = g_params)
+  group_effect_params <- grep(paste0("group_effect\\[",group_id,",", targetindex, ","), rownames(ms$summary), value = TRUE)
+  group_effect_draws <- rstan::extract(fit, pars = group_effect_params)
+  
+  ms
+
+```
+
 
 ```
 

@@ -647,6 +647,283 @@ ggsave(paste0("figures/recommendation_plot_cross-validation_X50_B50.pdf"), plot 
 
 ```
 
+
+```{r reasoning_plot_ridges_rev2, fig.height=8.5, fig.width=8, cache=FALSE,echo=FALSE, message=FALSE, warning=FALSE,fig.cap="The figure shows personal recommendations of potassium and phosphorous intake ($\\hat{Q}^{min}-\\hat{Q}^{max}$) based on cross-validation predictions of nutrition effects, $\\hat{b}_k$. Other parameters of the figure are similar to Supplementary Fig. S4. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org).}
+
+library(ggridges)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+
+simulation <- "X50_B50_A50_I50"
+
+potassium_org_mean <- mean(dialysis$kalium) # 2755
+potassium_org_sd <- sd(dialysis$kalium) # 949
+  
+phosphorous_org_mean <- mean(dialysis$fosfori) # 2755
+phosphorous_org_sd <- sd(dialysis$fosfori) # 949
+
+patient_summary$max_pk_prob <- as.numeric(patient_summary$max_pk_prob)
+patient_summary$max_fppi_prob <- as.numeric(patient_summary$max_fppi_prob)
+patient_summary$max_palb_prob <- as.numeric(patient_summary$max_palb_prob)
+
+min_accepted_recommandation_probability <- 0.80
+
+accepted_intake.df <- data.frame(matrix(ncol = 9, nrow = 0), row.names = NULL)
+
+for (person_id in 1:37) {
+  
+  personal_intake_file <- paste0("./patient_summary/mv3_cross_two_levels_cv/simulation",simulation,"/details/accepted_intake_",person_id,".rds")
+  
+  if (file.exists(personal_intake_file)) {
+    
+    #personal_recommendation <- paste0("./patient_summary/simulation",simulation,"/overviews/personal_recommendation_",person_id,".rds")
+
+    personal_intake.df <- readRDS(personal_intake_file)
+    
+    recommendations.df <- personal_intake.df[personal_intake.df$lowest_conc_prob >= min_accepted_recommandation_probability,]
+    
+    if (nrow(recommendations.df) > 0)
+    {
+      accepted_intake.df <- rbind(accepted_intake.df, cbind(person_id, recommendations.df))
+    } else {
+      emptyrow <- as.data.frame(matrix(c(person_id,0,0,0,0,0,0,0,0), ncol = 9, nrow = 1))
+      colnames(emptyrow) <- c("person_id","proposal", "pk_prob", "fppi_prob", "palb_prob", "lowest_conc_prob", "iid_prob", "pot", "pho")  
+      accepted_intake.df <- rbind(accepted_intake.df, emptyrow)
+    }
+
+  } else {
+    emptyrow <- as.data.frame(matrix(c(person_id,0,0,0,0,0,0,0,0), ncol = 9, nrow = 1))
+    colnames(emptyrow) <- c("person_id","proposal", "pk_prob", "fppi_prob", "palb_prob", "lowest_conc_prob", "iid_prob", "pot", "pho")  
+    accepted_intake.df <- rbind(accepted_intake.df, emptyrow)
+  }
+}
+
+# intake reasoning
+
+patient_summary$person_id <- as.character(patient_summary$person_id)
+accepted_intake.df$person_id <- as.character(accepted_intake.df$person_id)
+
+# english abbreviations for dialysis treatments
+#patient_summary[patient_summary$treatment == "OHD",]$treatment <- "HD"
+#patient_summary[patient_summary$treatment == "KHD",]$treatment <- "HHD"
+#patient_summary[patient_summary$treatment == "PD",]$treatment <- "PD"
+
+intake_reasoning.df <- accepted_intake.df %>%
+    inner_join(patient_summary, by="person_id") %>%
+    mutate(max_conc_prob = as.numeric(max_conc_prob)) %>%
+    mutate(max_recom_norm = ifelse(accepted == 1, (as.numeric(max_pot) - potassium_org_mean) / potassium_org_sd + (as.numeric(max_pho) - phosphorous_org_mean) / phosphorous_org_sd + 1000, max_conc_prob)) %>%
+  mutate(person_text = paste0(person_id, " ",treatment))
+
+#  mutate(min_pot = ifelse(min_pot == "-1", 0, as.numeric(min_pot))) %>%
+#  mutate(max_pot = ifelse(max_pot == "-1", 2500, as.numeric(max_pot))) %>%
+#  mutate(min_pho = ifelse(min_pho == "-1", 0, as.numeric(min_pho))) %>%
+#  mutate(max_pho = ifelse(max_pho == "-1", 1000, as.numeric(max_pho))) %>%
+  
+intake_reasoning.df$pot_text <- paste0(round(as.numeric(intake_reasoning.df$min_pot),0)," - ", round(as.numeric(intake_reasoning.df$max_pot),0))
+intake_reasoning.df$pho_text <- paste0(round(as.numeric(intake_reasoning.df$min_pho),0)," - ", round(as.numeric(intake_reasoning.df$max_pho),0))
+
+intake_reasoning.df[intake_reasoning.df$min_pho == "-1",]$pot_text <- ""
+intake_reasoning.df[intake_reasoning.df$min_pho == "-1",]$pho_text <- ""
+                    
+# concentration reasoning
+
+personal_effect_summary$person_id <- as.character(personal_effect_summary$person_id)
+muq0_summary$person_id <- as.character(muq0_summary$person_id)
+personal_targets$person_id <- as.character(personal_targets$person_id)
+
+#  mutate(pk_low_rec = ifelse(max_pk_prob >= 0.8, pk_low_rec, pk_low)) %>%
+#  mutate(pk_high_rec = ifelse(max_pk_prob >= 0.8, pk_high_rec, pk_high)) %>%
+
+conc_reasoning.df <- patient_summary %>%
+  inner_join(personal_effect_summary, by="person_id") %>%
+  inner_join(muq0_summary, by="person_id") %>%
+  inner_join(personal_targets, by="person_id") %>%
+  mutate(accepted = as.numeric(accepted)) %>%
+  mutate(max_conc_prob = as.numeric(max_conc_prob)) %>%
+  mutate(pk_low_rec = ifelse(accepted == 1, pk_low_rec, pk_low)) %>%
+  mutate(pk_high_rec = ifelse(accepted == 1, pk_high_rec, pk_high)) %>%
+  mutate(fppi_low_rec = ifelse(accepted == 1, fppi_low_rec, fppi_low_rec)) %>%
+  mutate(fppi_high_rec = ifelse(accepted == 1, fppi_high_rec, fppi_high)) %>%
+  mutate(palb_low_rec = ifelse(accepted == 1, palb_low_rec, palb_low)) %>%
+  mutate(palb_high_rec = ifelse(accepted == 1, palb_high_rec, palb_high)) %>%
+  mutate(max_recom_norm = ifelse(accepted == 1, (as.numeric(max_pot) - potassium_org_mean) / potassium_org_sd + (as.numeric(max_pho) - phosphorous_org_mean) / phosphorous_org_sd + 1000, max_conc_prob)) %>%
+  mutate(pk_accepted = ifelse(max_pk_prob >= 0.9, "high", ifelse(max_pk_prob >= 0.8, "low", "failed"))) %>%
+  mutate(fppi_accepted = ifelse(max_fppi_prob >= 0.9, "high", ifelse(max_fppi_prob >= 0.8, "low", "failed"))) %>%
+  mutate(palb_accepted = ifelse(max_palb_prob >= 0.9, "high", ifelse(max_palb_prob >= 0.8, "low", "failed")))
+
+mu_q0_color = "grey"
+recom_color = "black"
+default_recom_color = "lightgrey"
+
+conc_reasoning.df$pk_prob_text <- paste0(round(conc_reasoning.df$max_pk_prob * 100, 0), "%")
+conc_reasoning.df$fppi_prob_text <- paste0(round(conc_reasoning.df$max_fppi_prob * 100, 0), "%")
+conc_reasoning.df$palb_prob_text <- paste0(round(conc_reasoning.df$max_palb_prob * 100, 0), "%")
+conc_reasoning.df$treatment <- factor(conc_reasoning.df$treatment)
+
+# Special case: No valid combination found for accepted concentrations
+
+no_valid <- conc_reasoning.df %>%
+  filter(accepted == 0 & max_pk_prob >= min_accepted_recommandation_probability & max_fppi_prob >= min_accepted_recommandation_probability & max_palb_prob >= min_accepted_recommandation_probability) %>%
+  mutate(pk_prob_text = paste0("<",round(as.numeric(max_conc_prob) * 100, 0), "%")) %>%
+  mutate(fppi_prob_text = "") %>%
+  mutate(palb_prob_text = "") %>%
+  mutate(pk_accepted = "failed") %>%
+  mutate(fppi_accepted = "failed") %>%
+  mutate(palb_accepted = "failed")
+
+conc_reasoning.df[conc_reasoning.df$person_id %in% as.vector(no_valid$person_id),] <- no_valid
+
+# Use same ordering of patients than the main figure
+person_ordering.df <- readRDS("patient_summary/person_ordering.df.rds")
+
+# add person_order-columns
+intake_reasoning.df <- intake_reasoning.df %>% inner_join(person_ordering.df, by="person_id")
+conc_reasoning.df <- conc_reasoning.df %>% inner_join(person_ordering.df, by="person_id")
+
+ProbColorPalette <- c("#F44336","#4CAF50","#81C784")
+ProbColorPalette <- c("#F44336","#0000CD","#00BFFF") # <80%, 90%, 80%
+
+intake_reasoning.df$extra_pot <- as.numeric(intake_reasoning.df$max_pot) > 2500
+intake_reasoning.df$extra_pho <- as.numeric(intake_reasoning.df$max_pho) > 1000
+
+pot_plot <- ggplot(intake_reasoning.df, aes(x = pot, y = reorder(person_text, person_order), group = person_id)) +
+      geom_boxplot(width = 0.07, outlier.shape = NULL, aes(fill = extra_pot, color = extra_pot), show.legend = FALSE) +
+      theme_bw() +
+      scale_x_continuous(breaks=c(0,2500,5800), limits = c(0,5850)) +
+      geom_text(stat = "unique", aes(x=2500, label=pot_text), nudge_y=0.32, size=1.6) +
+      geom_vline(xintercept = 2500, linetype="solid", color = "black", size=0.1) +
+      labs(x = element_blank(), y = "Patients") +
+      theme(text = element_text(family = "Times New Roman")) +
+      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      ggtitle("Pot. (mg/d)")
+
+pho_plot <- ggplot(intake_reasoning.df, aes(x = pho, y = reorder(person_id, person_order), group = person_id)) +
+      geom_boxplot(width = 0.07, outlier.shape = NULL, aes(fill = extra_pho, color = extra_pho), show.legend = FALSE) +
+      theme_bw() +
+      scale_x_continuous(breaks=c(0,1000,2550), limits = c(0,3000)) +
+      geom_text(stat = "unique", aes(x=1000, label=pho_text), nudge_y=0.3, size=1.6) +
+      geom_vline(xintercept = 1000, linetype="solid", color = "black", size=0.1) +
+      labs(x = element_blank(), y = element_blank()) +
+      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      theme(text = element_text(family = "Times New Roman")) +
+      ggtitle("Phosp. (mg/d)")
+
+pk_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, person_order)), group = accepted) +
+      geom_bar(stat='identity', aes(x=pk_mu_q0), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=pk_high_rec, fill=pk_accepted), width=0.3, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=pk_low_rec), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
+      #geom_text(aes(x=1, label=pk_prob_text), size=2.5, fontface="bold", color="white") +
+      theme_bw() +
+      scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
+      scale_x_continuous(breaks=c(0,3.4,4.7,6)) +
+      geom_text(aes(x=pk_lower_limit, label="|"), fontface="plain", size=4, color="black") +
+      geom_text(aes(x=pk_upper_limit, label="|"), fontface="plain", size=4, color="black") +
+      #geom_point(aes(x=pk_lower_limit), shape=3) +
+      #geom_point(aes(x=pk_upper_limit), shape=3) +
+      labs(x = element_blank(), y = element_blank()) +
+      theme(text = element_text(family = "Times New Roman")) +
+      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      ggtitle("P-K (mmol/l)")
+
+fppi_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, person_order)), group = accepted) +
+      geom_bar(stat='identity', aes(x=fppi_mu_q0), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=fppi_high_rec, fill=fppi_accepted), width=0.3, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=fppi_low_rec), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
+      #geom_text(aes(x=0.5, label=fppi_prob_text), fontface="bold", size=2.5, color="white") +
+      scale_x_continuous(breaks=c(0,0.9,1.78,3)) +
+      geom_text(aes(x=fppi_lower_limit, label="|"), fontface="plain", size=4, color="black") +
+      geom_text(aes(x=fppi_upper_limit, label="|"), fontface="plain", size=4, color="black") +
+      #geom_point(aes(x=fppi_lower_limit), shape=3) +
+      #geom_point(aes(x=fppi_upper_limit), shape=3) +
+      theme_bw() +
+      scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
+      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      labs(x = element_blank(), y = element_blank()) +
+      theme(text = element_text(family = "Times New Roman")) +
+      ggtitle("fP-Pi (mmol/l)")
+
+palb_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, person_order)), group = accepted) +
+      geom_bar(stat='identity', aes(x=palb_mu_q0), fill=mu_q0_color, color=mu_q0_color, width=0.6, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=palb_high_rec, fill=palb_accepted), width=0.3, show.legend = FALSE) +
+      geom_bar(stat='identity', aes(x=palb_low_rec), width=0.6, fill=mu_q0_color, color=mu_q0_color, show.legend = FALSE) +
+      #geom_text(aes(x=0.5, label=palb_accepted), fontface="bold", size=2.5, color="white") +
+      #geom_text(aes(x=7, label=palb_prob_text), fontface="bold", size=2.5, color="white") +
+      scale_x_continuous(breaks=c(0,36,45)) +
+      geom_text(aes(x=palb_lower_limit), label="|", fontface="plain", size=4, color="black") +
+      geom_text(aes(x=palb_upper_limit), label="|", fontface="plain", size=4, color="black") +
+      #geom_point(aes(x=palb_lower_limit), shape=3) +
+      #geom_point(aes(x=palb_upper_limit), shape=3) +
+      theme_bw() +
+      scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
+      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      labs(x = element_blank(), y = element_blank()) +
+      theme(text = element_text(family = "Times New Roman")) +
+      ggtitle("P-Alb (g/l)")
+
+#grid.arrange(grobs=list(pot_plot,pho_plot,pk_plot,fppi_plot,palb_plot),top=textGrob("Personal intake recommendations                        Corresponding concentration predictions", gp = gpar(fontsize = 9)),ncol=5,nrow=1,padding=unit(0,"cm"),widths=c(1.45,1,1,1,1))
+
+#recommendation_plot <- grid.arrange(grobs=list(pot_plot,pho_plot,pk_plot,fppi_plot,palb_plot),ncol=5,nrow=1,padding=unit(0,"cm"),widths=c(1.32,1,1,1,1))
+
+recommendation_grob <- arrangeGrob(grobs=list(pot_plot,pho_plot,pk_plot,fppi_plot,palb_plot), ncol=5, nrow=1, padding=unit(0,"cm"), widths=c(1.32,1,1,1,1))
+
+
+save_pdf_plot <- function(filename, width, height) {
+
+    # Open the device
+  pdf(file = filename, width = width, height = height)
+  
+  # Start a fresh grid graphics page
+  grid.newpage()
+  
+  # Draw the grob
+  grid.draw(recommendation_grob)
+  
+  # Define a viewport above the pho_plot
+  vp <- viewport(x = 0.371, y = 0.926, width = 0.2, height = 0.1, just = c("center", "bottom"))
+  
+  # Push to the viewport and draw the arrow
+  pushViewport(vp)
+  grid.segments(x0 = 0.79, x1 = 0.95, y0 = 0.5, y1 = 0.5, arrow = arrow(type = "closed", length = unit(0.06, "inches")), gp = gpar(fill = "black", col = "black"))
+  
+  # Close the PNG device
+  dev.off()
+}
+
+save_tiff_plot <- function(filename, width, height) {
+
+    # Open the device
+  tiff(file = filename, width = width, height = height, units = "in", bg="white", res=300)
+  
+  # Start a fresh grid graphics page
+  grid.newpage()
+  
+  # Draw the grob
+  grid.draw(recommendation_grob)
+  
+  # Define a viewport above the pho_plot
+  vp <- viewport(x = 0.371, y = 0.926, width = 0.2, height = 0.1, just = c("center", "bottom"))
+  
+  # Push to the viewport and draw the arrow
+  pushViewport(vp)
+  grid.segments(x0 = 0.79, x1 = 0.95, y0 = 0.5, y1 = 0.5, arrow = arrow(type = "closed", length = unit(0.06, "inches")), gp = gpar(fill = "black", col = "black"))
+  
+  # Close the PNG device
+  dev.off()
+}
+
+save_tiff_plot(filename = "figures/FigS4.tiff", width = 5, height = 5)
+#save_pdf_plot(filename = "figures/FigS4.pdf", width = 6, height = 6)
+
+#ggsave(paste0("figures/recommendation_plot_cross-validation_X50_B50.pdf"), plot = recommendation_plot, width = 6, height = 6, scale = 1)
+
+#library(Cairo)
+#Cairo(file = "figures/FigS6.tiff", type = "tiff", width = 6, height = 6, bg="white", units = "in", res = 400)
+#grid.arrange(pot_plot, pho_plot, pk_plot, fppi_plot, palb_plot, ncol=5,nrow=1, padding=0,widths=c(1.32,1,1,1,1))
+#dev.off()
+
+```
+
 ## Personal recommendation for a patient
 
 ```{r nuts_intake_method_figure, cache=FALSE, eval=TRUE, echo=FALSE,message=FALSE, warning=FALSE, fig.cap="Figure shows detailed intake recommendation for patient 10 from the previous recommendation table. The intake plot on the left shows the posterior samples of diet configurations that result concentrations of plasma potassium (P-K), fasting plasma phosphate (fP-Pi) and plasma albumin (P-Alb) to stay within their recommended limits. These levels are marked with vertical solid lines in the concentration panels. The black point in the middle of intake plot represents the patient's current potassium and phosphorous intake. Current concentrations matching this intake are shown with dashed vertical lines. Reported recommendation is shown with a rectangle that contains $95\\%$ of diet proposals that result recommended concentrations over $90\\%$ accuracy. Colouring of the rectangle sides match the concentration estimates in the right hand panels. The figure is plotted with ggplot2 package for R language (v 3.3.5, https://ggplot2.tidyverse.org)."}
