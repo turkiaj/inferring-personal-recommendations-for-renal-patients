@@ -2065,9 +2065,9 @@ patient_summary$person_id <- as.character(patient_summary$person_id)
 accepted_intake.df$person_id <- as.character(accepted_intake.df$person_id)
 
 # english abbreviations for dialysis treatments
-patient_summary[patient_summary$treatment == "OHD",]$treatment <- "HD"
-patient_summary[patient_summary$treatment == "KHD",]$treatment <- "HHD"
-patient_summary[patient_summary$treatment == "PD",]$treatment <- "PD"
+#patient_summary[patient_summary$treatment == "OHD",]$treatment <- "HD"
+#patient_summary[patient_summary$treatment == "KHD",]$treatment <- "HHD"
+#patient_summary[patient_summary$treatment == "PD",]$treatment <- "PD"
 
 intake_reasoning.df <- accepted_intake.df %>%
     inner_join(patient_summary, by="person_id") %>%
@@ -2147,11 +2147,12 @@ pot_plot <- ggplot(intake_reasoning.df, aes(x = pot, y = reorder(person_text, ma
       geom_boxplot(width = 0.07, outlier.shape = NULL, aes(fill = extra_pot, color = extra_pot), show.legend = FALSE) +
       theme_bw() +
       scale_x_continuous(breaks=c(0,2500,5800), limits = c(0,5850)) +
-      geom_text(stat = "unique", aes(x=2500, label=pot_text), nudge_y=0.32, size=2.0) +
+      geom_text(stat = "unique", aes(x=2500, label=pot_text), nudge_y=0.32, size=1.8) +
       geom_vline(xintercept = 2500, linetype="solid", color = "black", size=0.1) +
       labs(x = element_blank(), y = "Patients") +
-      theme(text = element_text(family = "Times New Roman")) +
-      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      theme(text = element_text(family = "Times New Roman")) +      
+      theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
+      # TIF: theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
       ggtitle("Pot. (mg/d)")
 
       # PDF: theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
@@ -2161,11 +2162,11 @@ pho_plot <- ggplot(intake_reasoning.df, aes(x = pho, y = reorder(person_id, max_
       geom_boxplot(width = 0.07, outlier.shape = NULL, aes(fill = extra_pho, color = extra_pho), show.legend = FALSE) +
       theme_bw() +
       scale_x_continuous(breaks=c(0,1000,2550), limits = c(0,3000)) +
-      geom_text(stat = "unique", aes(x=1000, label=pho_text), nudge_y=0.3, size=2.0) +
+      geom_text(stat = "unique", aes(x=1000, label=pho_text), nudge_y=0.3, size=1.8) +
       geom_vline(xintercept = 1000, linetype="solid", color = "black", size=0.1) +
       labs(x = element_blank(), y = element_blank()) +
-      # PDF: theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text.y = element_blank(), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
-      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text.y = element_blank(), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
+      # TIF: theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
       theme(text = element_text(family = "Times New Roman")) +
       ggtitle("Phosp. (mg/d)")
 
@@ -2183,8 +2184,8 @@ pk_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom
       #geom_point(aes(x=pk_upper_limit), shape=3) +
       labs(x = element_blank(), y = element_blank()) +
       theme(text = element_text(family = "Times New Roman")) +
-      theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
-      # PDF: theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text.y = element_blank(), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
+      # TIF: theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
+      theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text.y = element_blank(), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
       ggtitle("P-K (mmol/l)")
 
 fppi_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_recom_norm + as.numeric(accepted_recommandation_probability) * 100000)), group = accepted) +
@@ -2199,6 +2200,7 @@ fppi_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_rec
       #geom_point(aes(x=fppi_upper_limit), shape=3) +
       theme_bw() +
       scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
+      # TIF: theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
       theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text.y = element_blank(), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
       labs(x = element_blank(), y = element_blank()) +
       theme(text = element_text(family = "Times New Roman")) +
@@ -2217,6 +2219,7 @@ palb_plot <- ggplot(data = conc_reasoning.df, aes(y = reorder(person_id, max_rec
       #geom_point(aes(x=palb_upper_limit), shape=3) +
       theme_bw() +
       scale_color_manual(aesthetics = "fill", values = ProbColorPalette) + 
+      # TIF: theme(axis.text.x = element_text(size=5.5),axis.title = element_text(size=8), axis.text.y = element_blank(), axis.text = element_text(size=5.5), plot.title = element_text(size=8)) +
       theme(axis.text.x = element_text(size=7),axis.title = element_text(size=9), axis.text.y = element_blank(), axis.text = element_text(size=7), plot.title = element_text(size=9)) +
       labs(x = element_blank(), y = element_blank()) +
       theme(text = element_text(family = "Times New Roman")) +
@@ -2273,9 +2276,9 @@ save_tiff_plot <- function(filename, width, height) {
   dev.off()
 }
 
-save_tiff_plot(filename = "figures/Fig4.tiff", width = 5, height = 5)
+#save_tiff_plot(filename = "figures/Fig4.tif", width = 5, height = 5)
 
-#save_pdf_plot(filename = "figures/Fig4.pdf", width = 6, height = 6)
+save_pdf_plot(filename = "figures/Fig4.pdf", width = 6, height = 6)
 
 # ggsave(paste0("figures/Fig4.pdf"), plot = recommendation_plot, width = 6, height = 6, scale = 1)
 # 
